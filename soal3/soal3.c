@@ -13,13 +13,12 @@
 #include <time.h>
 #include <unistd.h>
 
-char cwd[100]; // Inisialisasi array menampung current working dir
+char cwd[100];          // Inisialisasi array menampung current working dir
 pthread_t id_thread[3]; //inisialisasi array untuk menampung thread dalam kasus ini ada 2 thread
 char *arr[4], *arr2[20], arr3[100], abc[100], *fding[100];
 int n = 0, m = 0;
 int length = 5; //inisialisasi jumlah untuk looping
 int end;
-sem_t sem1, sem2, sem3;
 
 void *eksekusi(void *arg)
 {
@@ -37,20 +36,41 @@ void *eksekusi(void *arg)
         potongslash = strtok(NULL, "/");
     }
     strcpy(arr3, arr2[m - 1]);
-
-    potongtitik = strtok(arr2[m - 1], ".");
-    while (potongtitik != NULL)
-    {
-        arr[n] = potongtitik;
-        n++;
-        potongtitik = strtok(NULL, ".");
-    }
-
+    // printf("%s\n", arr3);
+    // printf("%s\n", &arr3[0]);
     char ekstensiFile[100];
-    strcpy(ekstensiFile, arr[n - 1]);
-    for (int i = 0; ekstensiFile[i]; i++)
+
+    if (strncmp(arr3, ".", 1) == 0)
     {
-        ekstensiFile[i] = tolower(ekstensiFile[i]);
+        strcpy(ekstensiFile, "hidden");
+        n = 2;
+        // printf("up %s\n", ekstensiFile);
+    }
+    else
+    {
+        potongtitik = strtok(arr2[m - 1], ".");
+        while (potongtitik != NULL)
+        {
+            arr[n] = potongtitik;
+            n++;
+            // printf("%s\n", arr[n-1]);
+            // printf("%d\n", n);
+            potongtitik = strtok(NULL, ".");
+        }
+        if (n > 1)
+        {
+            sprintf(ekstensiFile, "%s.%s", arr[n - 2], arr[n - 1]);
+        }
+        else
+        {
+            strcpy(ekstensiFile, arr[n - 1]);
+        }
+
+        for (int i = 0; ekstensiFile[i]; i++)
+        {
+            ekstensiFile[i] = tolower(ekstensiFile[i]);
+        }
+        // printf("do %s\n", ekstensiFile);
     }
 
     DIR *folder, *folderopen;
@@ -71,6 +91,7 @@ void *eksekusi(void *arg)
             if (strcmp(entry->d_name, ekstensiFile) == 0 && entry->d_type == 4)
             {
                 available = 1;
+                // printf("%d\n", available);
                 break;
             }
         }
@@ -79,7 +100,7 @@ void *eksekusi(void *arg)
         {
             // printf("bisa\n");
             sprintf(tempat2, "%s/%s", cwd, ekstensiFile);
-                mkdir(tempat2, 0777);
+            mkdir(tempat2, 0777);
         }
     }
     else
@@ -149,22 +170,41 @@ int main(int argc, char *argv[])
             }
             strcpy(temp_file, arg_path[m - 1]);
 
-            potongtitik = strtok(arg_path[m - 1], ".");
-            while (potongtitik != NULL)
-            {
-                arg_name[n] = potongtitik;
-                n++;
-                potongtitik = strtok(NULL, ".");
-            }
-
             char ekstensiFile[100];
-            strcpy(ekstensiFile, arr[n - 1]);
-            for (int i = 0; ekstensiFile[i]; i++)
+            if (strncmp(temp_file, ".", 1) == 0)
             {
-                ekstensiFile[i] = tolower(ekstensiFile[i]);
+                strcpy(ekstensiFile, "hidden");
+                n++;
+                // printf("up1 %s\n", ekstensiFile);
+            }
+            else
+            {
+                potongtitik = strtok(arg_path[m - 1], ".");
+                while (potongtitik != NULL)
+                {
+                    arg_name[n] = potongtitik;
+                    // printf("%s\n", arg_name);
+                    n++;
+                    potongtitik = strtok(NULL, ".");
+                }
+                if (n > 1)
+                {
+                    sprintf(ekstensiFile, "%s.%s", arg_name[n - 2], arg_name[n - 1]);
+                }
+                else
+                {
+                    strcpy(ekstensiFile, arg_name[n - 1]);
+                }
+
+                for (int i = 0; ekstensiFile[i]; i++)
+                {
+                    ekstensiFile[i] = tolower(ekstensiFile[i]);
+                }
+                // printf("do %s\n", ekstensiFile);
             }
             char it[1024];
             sprintf(it, "%s/%s", cwd, ekstensiFile);
+            // printf("it %s\n", it);
             dir = opendir(it);
             if (dir == NULL)
             {
@@ -176,6 +216,7 @@ int main(int argc, char *argv[])
                 strcpy(temp, temp_file);
                 if (strcmp(enter->d_name, temp) == 0)
                 {
+                    // printf("debug");
                     status[count] = 1;
                 }
             }
@@ -215,9 +256,7 @@ int main(int argc, char *argv[])
             printf("%s %d\n", masuk->d_name, masuk->d_type);
 
             int err;
-            strcpy(tempata, cwd);
-            strcat(tempata, "/");
-            strcat(tempata, masuk->d_name);
+            sprintf(tempata, "%s/%s", cwd, masuk->d_name);
             if (masuk->d_type == 8)
             {
                 pthread_create(&(id_thread[i]), NULL, eksekusi, tempata); //membuat thread
@@ -246,9 +285,7 @@ int main(int argc, char *argv[])
             printf("%s %d\n", masuk->d_name, masuk->d_type);
 
             int err;
-            strcpy(tempata, argv[2]);
-            strcat(tempata, "/");
-            strcat(tempata, masuk->d_name);
+            sprintf(tempata, "%s/%s", argv[2], masuk->d_name);
             if (masuk->d_type == 8)
             {
                 pthread_create(&(id_thread[i]), NULL, eksekusi, tempata); //membuat thread
