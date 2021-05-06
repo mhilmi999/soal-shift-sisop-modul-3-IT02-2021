@@ -38,7 +38,11 @@ Kelompok IT02
 
 ---
 
+<br>
+
+
 ## Soal 1
+---
 
 Source Code tersedia pada : [client.c](./soal1/Client/client.c)
 Source Code tersedia pada : [server.c](./soal1/Server/server.c)
@@ -153,52 +157,228 @@ Dalam menjawab soal 1.c. kami menyelesaikannya dengan bantuan dari ......
 <br>
 
 ## Soal 2
+---
 
-Source Code tersedia pada : [soal2a.c](./soal2/soal2a.c)
-Source Code tersedia pada : [soal2a.c](./soal2/soal2b.c)
-Source Code tersedia pada : [soal2a.c](./soal2/soal2c.c)
+Source Code [soal2a.c](./soal2/soal2a.c)\
+Source Code [soal2b.c](./soal2/soal2b.c)\
+Source Code [soal2c.c](./soal2/soal2c.c)
 
 ## **Analisa Soal**
 
-Dari kami merasa soal ini lebih utamanya ......
+Dari kami merasa soal ini lebih utamanya meminta membuat sebuah program perkalian matriks dan menampilkan hasilnya. Selanjutnya program ini menggunakan shared memory yang mana akan dilakukan terhadap perhitungan matriks yang baru (inputan user). Perhitungan terjadi pada tiap-tiap sel yang berasal dari matriks A agar menjadi faktorial, lalu sel dari matriks B menjadi batas maksimal faktorialnya. Detil dari program yang diminta adalah sebagai berikut :
+1. Program merupakan untuk perkalian matriks `4x3` dengan `3x6` dan menampilkan hasilnya. Matriks hanya berisi angka 1 - 20 `(tidak perlu membuat filter angka)`.
+2. Program yang menerima inputan output dari [soal2a.c](./soal2/soal2a.c) dengan shared memory yang selanjutnya akan melakukan kalkulasi matriks baru (inputan baru user) dengan detil nantinya pada [Soal 2.b.](#soal-2b). 
+3. Program yang ketiga dibuat untuk melakukan *cross check* dalam 5 proses teratas yang memakan *reource* komputernya dengan command <br> `"ps aux | sort -nrk 3,3 | head -5"`.
+4. Semua matriks berasal dari input ke program.
+5. Dilarang menggunakan `system()`.
 
 
 <br>
 
 **Cara pengerjaan**
 ---
+Dalam menyelesaikan program yang diminta oleh [soal2](#soal-2), pertama-tama yang diperlukan adalah melakukan *import* library yang digunakan dalam pembuatan matrix dengan `thread` :
+```c
+#include<pthread.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/ipc.h>
+#include<sys/shm.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+#include<unistd.h>
+```
+- `<pthread.h>` library untuk mendapatkan ID dari pemanggilan sebuah thread(e.g. `pthread_self()`)
+- `<stdio.h>` library untuk fungsi input-output (e.g. `scanf()`)
+- `<stdlib.h>` library untuk fungsi umum (e.g. `NULL`)
+- `<string.h>` library untuk melnampilkan pesan error apa saat gagal membuat thread dalam *development side* (e.g. `strerror()`)
+- `<sys/ipc.h>` library digunakan untuk struktur akses dalam komunikasi antarproses (e.g `IPC_RMID, IPC_CREAT`)
+- `<sys/shm.h>` library digunakan untuk melakukan operasi *shared memori*  (e.g `shmat, shmdt, shmctl, shmget`)
+- `<sys/types.h>` library digunakan untuk identifikasi sebuah thread (e.g `pthread_t id_thread[3]`)
+- `<sys/wait.h>` library untuk keterkaitan terhadap library `<sys/types.h>`
+- `<unistd.h>` library untuk mendapatkan lokasi direktori saat bekerja dimana (e.g. `getcwd()`)
 
 <br>
 
 ## Soal 2.a.
 ## **Analisa Soal**
-Soal meminta untuk 
-
-
-
+Soal meminta untuk membuat program perkalian matriks `4x3` dan `3x6` serta menampilkan hasilnya. Yang mana matriks ini berisi angka 1 - 20 (tanpa perlu membuat filter angka).
 
 **Cara Pengerjaan**
 ---
-Dengan menggunakan ...
+Perkalian dilakukan antara matriks `4x3` dan `3x6` sehingga menghasilkan matriks `4x6`. Dalam perkalian matriks, kami menggunakan `thread "kali matriks"` dengan detil *code* sebagai berikut :
+```c
+void *kalimatriks(void *arg)
+{
+    pthread_t id = pthread_self();
+
+    if (pthread_equal(id, tid[0])) // baris 1 matriks c
+        for (int i = 0; i < 6; i++)
+            C[0][i] = A[0][0] * B[0][i] + A[0][1] * B[1][i] + A[0][2] * B[1][i];
+    else if (pthread_equal(id, tid[1])) // baris 2 matriks c
+        for (int i = 0; i < 6; i++)
+            C[1][i] = A[1][0] * B[0][i] + A[1][1] * B[1][i] + A[1][2] * B[1][i];
+    else if (pthread_equal(id, tid[2])) // baris 3 matriks c
+        for (int i = 0; i < 6; i++)
+            C[2][i] = A[2][0] * B[0][i] + A[2][1] * B[1][i] + A[2][2] * B[1][i];
+    else if (pthread_equal(id, tid[3])) // baris 4 matriks c
+        for (int i = 0; i < 6; i++)
+            C[3][i] = A[3][0] * B[0][i] + A[3][1] * B[1][i] + A[3][2] * B[1][i];
+}
+```
+Dikarenakan hasil dari perkalian matriks ini digunakan pada [Soal 2.b.](#soal-2b), maka setelah perkalian sukses tereksekusi hasil nya akan tersimpan pada *shared memory* dengan sebagai berikut :
+```c
+key_t key = 1234;
+    int shmid = shmget(key, sizeof(int) * row * column, IPC_CREAT | 0666);
+    matrix = (int *)shmat(shmid, NULL, 0);
+
+    for (int i = 0; i < row; i++)
+    {
+        for (int j = 0; j < column; j++)
+        {
+            matrix[i * column + j] = C[i][j];
+            printf("%d\t", matrix[i * column + j]);
+        }
+        printf("\n");
+    }
+
+    sleep(10);
+
+    shmdt(matrix);
+    shmctl(shmid, IPC_RMID, NULL);
+
+    return 0;
+```
+_catatan : Dalam pengembalian nilai dari pemanggilan sistem `shmget(key,sizeof(int) * row * column, IPC_CREAT | 0666)` dibantu oleh fungsi `shmid`. Selanjutnya dalam mendaftarkan segmen terhadap data space dari proses merupakan arti dari kode ` matrix[i * column + j] = C[i][j];`. Lalu pelepasan segmen *shared memory* dari proses oleh fungsi `shmdt(matrix)`. Dan dalam mengetahui informasi yang berkaitan dengan suatu shared memory digunakan fungsi `shmctl(shmid, IPC_RMID, NULL)`._
 <br>
 
 
 ## Soal 2.b.
 ## **Analisa Soal**
-Pada poin ini diminta untuk ...
+Pada poin ini diminta untuk menampilkan dan menggunakan *shared memory* dari *output* program [Soal 2.a.](#soal-2a). Maka matriks tersebut dilakukan kalkulasi terhadap matriks inputan baru dari pengguna . Secara detail perhitungannya adalah setiap sel yang berasal dari Matriks A menjadi angka untuk faktorial, kemudian sel dari Matriks B menjadi batas maksimal faktorialnya (dari paling besar ke paling kecil). Hal yang harus diperhatikan : 
+- `If a >= b  -> a!/(a-b)!`
+- `If b > a -> a!`
+- `If 0 -> 0`
 
 **Cara Pengerjaan**
 ---
-Kita perlu mengambil ....
+Kita perlu mengambil hasil dari perhitungan perkalian matriks dari [Soal 2.a.](#soal-2a) melalui shared variable terlebih dahulu. Dalam menampilkannya matriks tersebut akan tersimpan dalam `matriks[i][j]` agar dapat digunakan untuk mengkalkulasikan penjumlahan dari n - 1 :
+```c
+int main () {
+
+    int row = 4;
+    int column = 6;
+    int *matrix;
+
+    key_t key = 1234;
+    int shmid = shmget(key, sizeof(int)*row*column, IPC_CREAT | 0666);
+    matrix = (int *)shmat(shmid, NULL, 0);
+
+    printf("MATRIKS PERKALIAN\n");
+
+    for (int i = 0; i < row; i++){
+        for (int j = 0; j < column; j++){
+            printf("%d\t", matrix[i*column + j]);
+            matriks[i][j] = matrix[i*column + j];
+        }
+        printf("\n");
+    }
+```
+_catatan : Seperti biasa kita definisikan terlebih dahulu dari dimensi matriks dan variable-variable pendukung guna jalannya dari hasil matriks shared memory yang diperoleh dari [Soal 2.a.](#soal-2a)._
+
+<br>
+
+Sedangkan dalam melakukan penjumlahan dari n hingga 1 atau faktorialnya, akan digunakan `thread "factorial"` yang didalamnya terdapat rumus dari `deret geometri`. Variable `n` disini akan menyimpan nilai dari `matriks[i][j]` yang ingin kita jumlahkan dari n hingga 1.
+```c
+void* factorial (void *arg){
+    struct args* data;
+    data = (struct args *) arg;
+    unsigned long long fact = 1;
+    unsigned long long temp, temp2;
+    int n = data->a;
+    int m =  data->b;
+    int rows = data->rows;
+    int col = data->col;
+    if(n < m){
+        res[rows][col] = hitungfaktorial(n,m);
+    }else if(n > m){
+        res[rows][col] = hitungfaktorial(n,m);
+    }else{
+        res[rows][col] = 0;
+    }
+}
+```
+_catatan : rumus deret geometri menyesuaikan dengan instruksi dari soal_
 
 <br>
 
 
 ## Soal 2.c.
 ## **Analisa Soal**
-Pada soal ini kita diminta untuk
+Pada soal ini kita diminta untuk membuat program yang berfungsi untuk melakukan validasi terhadap 5 proses teratas dalam mengetahui *resource* mana saja yang memakan pada komputernya dengan command `"ps aux | sort -nrk 3,3 | head -5"` yang mana hal ini dilakukan dengan `IPC Pipes`.
+
 **Cara Pengerjaan**
 ---
+Disini kami mendeklarasikan dan menggunakan 2 `pipe()` dengan fork. Pembuatan `pipe` dibantu oleh fungsi `pipe()`. Apabila fork berhasil dilakukan dan *child process* berhasil dibuat `pid1 == 0`, maka pipe pertama `pipe1[1]` akan terduplikasi menjadi file deskriptor dari stdout, lalu pipe pertama tersebut `pipe1` akan ditutup dan program akan melakukan eksekusi command `ps aux`
+```c
+if (pid1 == 0)
+    {
+        pid2 = fork();
+        if (pid2 == 0)
+        {
+            close(pipe1[0]);
+            close(pipe2[1]);
+            close(pipe2[0]);
+            printf("1");
+            dup2(pipe1[1], STDOUT_FILENO);
+
+            close(pipe1[1]);
+            char *argv[] = {"ps", "aux", NULL};
+            execv("/usr/bin/ps", argv);
+        }
+```
+
+<br>
+
+Selanjutnya *child process*nya akan tereksekusi terlebih dahulu dengan  `pipe` yang kedua `pipe2`, menduplikasi `pipe` pertama `pipe1` menjadi file deskriptor `stdin`, menduplikasi pipe kedua `pipe2[1]` menjadi file deskriptor dari `stdout`, dan menutup `pipe` pertama `pipe1`. *Child process* disini akan mengeksekusi command `sort -nrk 3,3`.
+```c
+ else
+        {
+            printf("2");
+            close(pipe1[1]);
+            close(pipe2[0]);
+            dup2(pipe1[0], STDIN_FILENO);
+            dup2(pipe2[1], STDOUT_FILENO);
+            close(pipe2[1]);
+            close(pipe1[0]);
+
+            char *argv[] = {"sort", "-nrk", "3,3", NULL};
+            execv("/usr/bin/sort", argv);
+        }
+    }
+```
+
+<br>
+
+Lalu *Parent Process* `pid1` kembali melakukan eksekusi dengan `pip` yang kedua `pipe2` menduplikasi `pipe` dan terduplikasi menjadi file deskriptor dari stdout, lalu `pipe` tersebut akan ditutup dan program akan melakukan eksekusi command `head -5`.
+```c
+else
+    {
+        printf("3");
+        close(pipe1[1]);
+        close(pipe1[0]);
+        dup2(pipe2[0], STDIN_FILENO);
+        // dup2(pipe2[1], STDOUT_FILENO);
+
+        close(pipe2[0]);
+        close(pipe2[1]);
+        // close(pipe2[1]);
+        char *argv[] = {"head", "-5", NULL};
+        execv("/usr/bin/head", argv);
+    }
+```
+
 
 **Kendala**
 ---
@@ -222,6 +402,7 @@ Pada awalnya dari kelompok kami ...
 <br>
 
 ## Soal 3
+---
 
 Source Code tersedia pada : [soal3.c](./soal3/soal3.c)
 

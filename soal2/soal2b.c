@@ -48,17 +48,10 @@ void* factorial (void *arg){
     int rows = data->rows;
     int col = data->col;
     if(n < m){
-        // printf("n, m %d, %d\n", n,m );
         res[rows][col] = hitungfaktorial(n,m);
-        // printf("res %d \n", res[rows][col]);
     }else if(n > m){
-        // printf("n, m %d, %d\n", n,m );
-        // unsigned long long temp = hitungfaktorial(n,m);
-        // printf("temp %d\n", temp );
         res[rows][col] = hitungfaktorial(n,m);
-        // printf("res %d \n", res[rows][col]);
     }else{
-        // printf("n, m %d, %d\n", n,m );
         res[rows][col] = 0;
     }
 }
@@ -107,7 +100,6 @@ int main () {
             data->b = mat_b[i][j];
             data->rows = i;
             data->col = j;
-            // printf("Matriks[%d][%d] %d ", i, j, data->n);
 
             pthread_create(&(tid[i * column + j]), NULL, factorial, (void*)data);
             pthread_join(tid[i * column + j], NULL);
