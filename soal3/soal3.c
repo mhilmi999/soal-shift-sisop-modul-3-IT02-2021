@@ -13,127 +13,24 @@
 #include <time.h>
 #include <unistd.h>
 
-char cwd[100];          // Inisialisasi array menampung current working dir
-pthread_t id_thread[3]; //inisialisasi array untuk menampung thread dalam kasus ini ada 2 thread
-char *arr[4], *arr2[20], arr3[100], abc[100], *fding[100];
-int n = 0, m = 0;
-int length = 5; //inisialisasi jumlah untuk looping
-int end;
-
-void *eksekusi(void *arg)
-{
-    strcpy(abc, arg);
-    char *potongtitik, *potongslash;
-
-    unsigned long i = 0;
-    pthread_t id = pthread_self();
-
-    potongslash = strtok(abc, "/");
-    while (potongslash != NULL)
-    {
-        arr2[m] = potongslash;
-        m++;
-        potongslash = strtok(NULL, "/");
-    }
-    strcpy(arr3, arr2[m - 1]);
-    // printf("%s\n", arr3);
-    // printf("%s\n", &arr3[0]);
-    char ekstensiFile[100];
-
-    if (strncmp(arr3, ".", 1) == 0)
-    {
-        strcpy(ekstensiFile, "hidden");
-        n = 2;
-        // printf("up %s\n", ekstensiFile);
-    }
-    else
-    {
-        potongtitik = strtok(arr2[m - 1], ".");
-        while (potongtitik != NULL)
-        {
-            arr[n] = potongtitik;
-            n++;
-            // printf("%s\n", arr[n-1]);
-            // printf("%d\n", n);
-            potongtitik = strtok(NULL, ".");
-        }
-        if (n > 1)
-        {
-            sprintf(ekstensiFile, "%s.%s", arr[n - 2], arr[n - 1]);
-        }
-        else
-        {
-            strcpy(ekstensiFile, arr[n - 1]);
-        }
-
-        for (int i = 0; ekstensiFile[i]; i++)
-        {
-            ekstensiFile[i] = tolower(ekstensiFile[i]);
-        }
-        // printf("do %s\n", ekstensiFile);
-    }
-
-    DIR *folder, *folderopen;
-    struct dirent *entry;
-    char tempat2[100], tempat3[100];
-    folder = opendir(cwd);
-    int available = 0;
-
-    if (n > 1)
-    {
-        // printf("n > 1");
-        if (folder == NULL)
-        {
-            printf("error");
-        }
-        while ((entry = readdir(folder)))
-        {
-            if (strcmp(entry->d_name, ekstensiFile) == 0 && entry->d_type == 4)
-            {
-                available = 1;
-                // printf("%d\n", available);
-                break;
-            }
-        }
-
-        if (available == 0)
-        {
-            // printf("bisa\n");
-            sprintf(tempat2, "%s/%s", cwd, ekstensiFile);
-            mkdir(tempat2, 0777);
-        }
-    }
-    else
-    {
-        sprintf(tempat2, "%s/Unknown", cwd);
-        mkdir(tempat2, 0777);
-    }
-
-    char source[1024], target[1024];
-    sprintf(source, "%s", arg);
-
-    if (n == 1)
-    {
-        sprintf(target, "%s/Unknnown", cwd);
-    }
-    else
-    {
-        sprintf(target, "%s/%s", cwd, ekstensiFile);
-    }
-    strcat(target, "/");
-    strcat(target, arr3);
-    rename(source, target);
-    n = 0;
-    m = 0;
-
-    return NULL;
-}
+char *arr[4]; 
+char *arr2[20]; 
+int length = 5; 
+int akhir;
+char gantiDir[100];
+void *eksekusi(void *arg);
+pthread_t id_thread[3]; 
+char arr3[100]; 
+char inputanPath[100]; 
+char *fding[100];
+int n = 0; 
+int m = 0;
 
 int main(int argc, char *argv[])
 {
-    if (getcwd(cwd, sizeof(cwd)) != NULL)
+    if (getcwd(gantiDir, sizeof(gantiDir)) != NULL)
     {
-        printf("Current working dir: %s\n", cwd);
+        printf("Current working dir: %s\n", gantiDir);
     }
     int i = 0, j = 0;
     int err;
@@ -145,7 +42,7 @@ int main(int argc, char *argv[])
         for (j = 2; j < argc; j++)
         {
             int err;
-            end = argc - 2;
+            akhir = argc - 2;
             pthread_create(&(id_thread[i]), NULL, eksekusi, argv[j]);
             pthread_join(id_thread[i], NULL);
             i++;
@@ -203,7 +100,7 @@ int main(int argc, char *argv[])
                 // printf("do %s\n", ekstensiFile);
             }
             char it[1024];
-            sprintf(it, "%s/%s", cwd, ekstensiFile);
+            sprintf(it, "%s/%s", gantiDir, ekstensiFile);
             // printf("it %s\n", it);
             dir = opendir(it);
             if (dir == NULL)
@@ -242,7 +139,7 @@ int main(int argc, char *argv[])
         DIR *fd, *fdo;
         struct dirent *masuk;
         char tempata[100], tempatb[100];
-        fd = opendir(cwd);
+        fd = opendir(gantiDir);
         int available = 0;
 
         if (fd == NULL)
@@ -256,7 +153,7 @@ int main(int argc, char *argv[])
             printf("%s %d\n", masuk->d_name, masuk->d_type);
 
             int err;
-            sprintf(tempata, "%s/%s", cwd, masuk->d_name);
+            sprintf(tempata, "%s/%s", gantiDir, masuk->d_name);
             if (masuk->d_type == 8)
             {
                 pthread_create(&(id_thread[i]), NULL, eksekusi, tempata); //membuat thread
@@ -297,3 +194,113 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+void *eksekusi(void *arg)
+{
+    strcpy(inputanPath, arg);
+    char *potongtitik, *potongslash;
+
+    unsigned long i = 0;
+    pthread_t id = pthread_self();
+
+    potongslash = strtok(inputanPath, "/");
+    while (potongslash != NULL)
+    {
+        arr2[m] = potongslash;
+        m++;
+        potongslash = strtok(NULL, "/");
+    }
+    strcpy(arr3, arr2[m - 1]);
+    // printf("%s\n", arr3);
+    // printf("%s\n", &arr3[0]);
+    char ekstensiFile[100];
+
+    if (strncmp(arr3, ".", 1) == 0)
+    {
+        strcpy(ekstensiFile, "hidden");
+        n = 2;
+        // printf("up %s\n", ekstensiFile);
+    }
+    else
+    {
+        potongtitik = strtok(arr2[m - 1], ".");
+        while (potongtitik != NULL)
+        {
+            arr[n] = potongtitik;
+            n++;
+            // printf("%s\n", arr[n-1]);
+            // printf("%d\n", n);
+            potongtitik = strtok(NULL, ".");
+        }
+        if (n > 1)
+        {
+            sprintf(ekstensiFile, "%s.%s", arr[n - 2], arr[n - 1]);
+        }
+        else
+        {
+            strcpy(ekstensiFile, arr[n - 1]);
+        }
+
+        for (int i = 0; ekstensiFile[i]; i++)
+        {
+            ekstensiFile[i] = tolower(ekstensiFile[i]);
+        }
+        // printf("do %s\n", ekstensiFile);
+    }
+
+    DIR *folder, *folderopen;
+    struct dirent *entry;
+    char tempat2[100], tempat3[100];
+    folder = opendir(gantiDir);
+    int available = 0;
+
+    if (n > 1)
+    {
+        // printf("n > 1");
+        if (folder == NULL)
+        {
+            printf("error");
+        }
+        while ((entry = readdir(folder)))
+        {
+            if (strcmp(entry->d_name, ekstensiFile) == 0 && entry->d_type == 4)
+            {
+                available = 1;
+                // printf("%d\n", available);
+                break;
+            }
+        }
+
+        if (available == 0)
+        {
+            // printf("bisa\n");
+            sprintf(tempat2, "%s/%s", gantiDir, ekstensiFile);
+            mkdir(tempat2, 0777);
+        }
+    }
+    else
+    {
+        sprintf(tempat2, "%s/Unknown", gantiDir);
+        mkdir(tempat2, 0777);
+    }
+
+    char source[1024], target[1024];
+    sprintf(source, "%s", arg);
+
+    if (n == 1)
+    {
+        sprintf(target, "%s/Unknnown", gantiDir);
+    }
+    else
+    {
+        sprintf(target, "%s/%s", gantiDir, ekstensiFile);
+    }
+    strcat(target, "/");
+    strcat(target, arr3);
+    rename(source, target);
+    n = 0;
+    m = 0;
+
+    return NULL;
+}
+

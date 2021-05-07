@@ -11,22 +11,23 @@ int main()
     int pipe1[2];  // Used to store two ends of first pipe
     int pipe2[2]; // Used to store two ends of second pipe
     // int fd3[2];
-    pid_t pid1, pid2;
+    pid_t pid1;
     if (pipe(pipe1) == -1)
     {
-        fprintf(stderr, "Pipe Failed");
+        fprintf(stderr, "Gagal Pipe");
         return 1;
     }
+    pid_t pid2;
     if (pipe(pipe2) == -1)
     {
-        fprintf(stderr, "Pipe Failed");
+        fprintf(stderr, "Gagal Pipe");
         return 1;
     }
 
     pid1 = fork();
     if (pid1 < 0)
     {
-        fprintf(stderr, "fork Failed");
+        fprintf(stderr, "Gagal fork");
         return 1;
     }
 
