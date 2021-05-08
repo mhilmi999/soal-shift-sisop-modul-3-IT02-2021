@@ -18,10 +18,12 @@
 #include <fcntl.h>
 #include <sys/sendfile.h>
 
-#define PORT 1036
+#define PORT 1037
+char cwd[100];
 
 int main(int argc, char const *argv[])
 {
+  getcwd(cwd, sizeof(cwd));
   struct sockaddr_in address;
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
@@ -53,11 +55,9 @@ int main(int argc, char const *argv[])
     return -1;
   }
   printf("oke bos\n");
-  // login form
   while (otentikasi == 0)
   {
     puts("otentikasi 0");
-    // selamat datang
     bzero(buffer, sizeof(buffer));
     valread = read(sock, buffer, 1024);
     if (valread < 1)
@@ -66,7 +66,6 @@ int main(int argc, char const *argv[])
     }
     printf("%s\n", buffer);
     bzero(buffer, sizeof(buffer));
-    // input mode
     fgets(buff, 1024, stdin);
     send(sock, buff, strlen(buff), 0);
 
@@ -77,7 +76,6 @@ int main(int argc, char const *argv[])
       bzero(buff, sizeof(buff));
       puts("login form");
       char buff2[1024] = {0};
-      // pesan dari server id
       valread = read(sock, buffer, 1024);
       if (valread < 1)
       {
@@ -85,13 +83,10 @@ int main(int argc, char const *argv[])
       }
       printf("%s\n", buffer);
       bzero(buffer, sizeof(buffer));
-      // Masukkan kredensial
       fgets(buff, 1024, stdin);
-      // kirim kredensial
       send(sock, buff, strlen(buff), 0);
       bzero(buff, sizeof(buff));
       puts("lalal");
-      // password
       valread = read(sock, buffer, 1024);
       if (valread < 1)
       {
@@ -99,12 +94,9 @@ int main(int argc, char const *argv[])
       }
       printf("%s\n", buffer);
       bzero(buffer, sizeof(buffer));
-      // Masukkan kredensial
       fgets(buff2, 1024, stdin);
-      // kirim kredensial
       send(sock, buff2, strlen(buff2), 0);
       bzero(buff2, sizeof(buff2));
-      // menerima otentikasi
       char isotentikasi[2] = {0};
       valread = read(sock, isotentikasi, 2);
       if (valread < 1)
@@ -112,7 +104,6 @@ int main(int argc, char const *argv[])
         printf("4eror recv\n");
       }
       printf("auth %s\n", isotentikasi);
-      // sprintf(otentikasi, "%d", isotentikasi);
       otentikasi = atoi(isotentikasi);
       bzero(isotentikasi, sizeof(isotentikasi));
     }
@@ -236,8 +227,7 @@ int main(int argc, char const *argv[])
           else
           {
             printf("Failed to open file: %s\n", filenamepath);
-            //* Sending dummy file to server to cancel receiving file
-            send(sock, "code_err", 20, 0);
+            send(sock, "error", 20, 0);
             // return;
           }
           bzero(bufferz, sizeof(bufferz));
@@ -246,7 +236,7 @@ int main(int argc, char const *argv[])
             // printf("tes");
             if (send(sock, bufferz, sizeof(bufferz), 0) == -1)
             {
-              perror("Error in sending file.");
+              fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
               exit(1);
             }
             bzero(bufferz, sizeof(bufferz));
@@ -294,7 +284,51 @@ int main(int argc, char const *argv[])
         }
         if (strncmp(buffer2, "download", 8) == 0)
         {
-          printf("under maintanance\n");
+          char *namafile;
+          char *tmp;
+          char *tmp2[50];
+          tmp = strtok(buffer2, " ");
+          int n;
+          n = 0;
+          while (tmp != NULL)
+          {
+            tmp2[n] = tmp;
+            n++;
+            tmp = strtok(NULL, " ");
+          }
+          strtok(buffer2, "delete ");
+          printf("%s\n", tmp2[n - 1]);
+          send(sock, tmp2[n - 1], sizeof(tmp2[n - 1]), 0);
+          printf("%s\n", tmp2[n - 1]);
+          char filenamepath[100];
+          strcpy(filenamepath, tmp2[n - 1]);
+          strtok(filenamepath, "\n");
+          printf("file %s\n", filenamepath);
+          FILE *file_fd = fopen(filenamepath, "a+");
+          char bufferz[1024];
+          bzero(bufferz, sizeof(bufferz));
+          int pors;
+          while (1)
+          {
+            // printf("lool\n");
+            pors = read(sock, bufferz, 1024);
+            if (strcmp(bufferz, "EOF") == 0)
+            {
+              break;
+            }
+            if (pors > 0 && strcmp(bufferz, "error") == 0)
+            {
+              printf("testint erorr\n");
+              // fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+              break;
+            }
+
+            fprintf(file_fd, "%s", bufferz);
+            bzero(bufferz, sizeof(bufferz));
+          }
+          fclose(file_fd);
+          printf("done\n");
+          // printf("under maintanance\n");
         }
         if (strncmp(buffer2, "quit", 4) == 0)
         {

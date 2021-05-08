@@ -23,8 +23,8 @@
 #include <fcntl.h>
 #include <sys/sendfile.h>
 
-#define PORT 1036
-char *filename[1024], *info[4096], *fullpath[1024], *ekstensi[1024], *nama[1024], *publisher[1024], *year[1024];
+#define PORT 1037
+char *filename[1024], info[256][4096], fullpath[100][1024], ekstensi[100][1024], nama[100][1024], publisher[100][1024], year[100][1024];
 char cwd[100];
 int jumlahData = 0;
 
@@ -51,6 +51,7 @@ int checkLogin(char *kredensial)
             return 1;
         }
         p = strtok(NULL, "\n");
+        printf("akun %s\n", p);
     }
     fclose(fptr);
     printf("false\n");
@@ -67,8 +68,6 @@ void registerAkun(char *kredensial)
 
 void readDatabase()
 {
-    bzero(publisher, sizeof(publisher));
-    bzero(year, sizeof(year));
 
     FILE *fp = fopen("files.tsv", "r");
     char file_content[1024];
@@ -78,40 +77,53 @@ void readDatabase()
     fread(file_content, 1, fsize, fp);
     int i;
     i = 0;
-    char *tok, *token2, *temp, *temp2;
-    char *baris[1024];
-
-    char *p = strtok(file_content, "\n");
-    while (p != NULL)
+    char token2[100];
+    char temp[100], temp2[100];
+    char baris[100][1024];
+    printf("file con %s\n", file_content);
+    char *xyz = strtok(file_content, "\n");
+    while (xyz != NULL)
     {
-        printf("%s\n", p);
-        baris[i] = strtok(file_content, "\n");
+        printf("%s\n", xyz);
+        printf("len %d\n", strlen(xyz));
+        strcpy(baris[i], xyz);
+        printf("%s\n", baris[i]);
         int n = 0;
-        tok = strtok(baris[i], "< >");
+        char *tok = strtok(baris[i], "< >");
         while (tok != NULL)
         {
-            info[n] = tok;
+            strcpy(info[n], tok);
+            // info[n] = tok;
             printf("info %s\n", info[n]);
             n++;
             tok = strtok(NULL, "< >");
         }
-        printf("losss\n");
+        // printf("losss\n" );
         strcpy(publisher[i], info[0]);
         strcpy(year[i], info[1]);
         printf("%s\n", publisher[i]);
         printf("%s\n", year[i]);
         strcpy(temp, info[n - 1]);
         printf("%s\n", temp);
-        token2 = strtok(temp, ".");
-        ekstensi[i] = token2;
+        strcpy(fullpath[i], temp);
+        strcpy(token2, strtok(temp, "."));
+        printf("tok2 %s\n", token2);
+        // strcpy(ekstensi[i], token2);
+        strcpy(token2, strtok(NULL, "."));
+        strcpy(ekstensi[i], token2);
+        // ekstensi[i] = token2;
         printf("%s\n", token2);
         char *token3 = strtok(temp, "/");
-        token2 = strtok(NULL, "/");
-        nama[i] = token2;
-        printf("%d -> %s -> %s -> %s -> %s -> %s", i, baris[i], publisher[i], year[i], fullpath[i], ekstensi[i]);
+        strcpy(token2, strtok(NULL, "/"));
+        // nama[i] = token2;
+        strcpy(nama[i], token2);
+        printf("%s\n", nama[i]);
+        printf("%d -> %s -> %s -> %s -> %s -> %s lalal", i, xyz, publisher[i], year[i], fullpath[i], ekstensi[i]);
         i++;
         jumlahData++;
-        p = strtok(NULL, "\n");
+        printf("jumlah data  %d\n", jumlahData);
+        xyz = strtok(NULL, "\n");
+        printf("new_p %s\n", xyz);
     }
     fclose(fp);
 }
@@ -132,7 +144,7 @@ void see(int new_socket, int n)
     n = 0;
     while (n < jumlahData)
     {
-        int x = 1;
+        printf("n %d\n", n);
         strcpy(result, "Nama: ");
         strcat(result, nama[n]);
         strcat(result, "\nPublisher: ");
@@ -258,36 +270,29 @@ int main(int argc, char const *argv[])
                 char id[1024];
                 char password[1024];
                 bzero(buffer, sizeof(buffer));
-                // mengirim pesan
                 char *message = "user id : ";
                 send(new_socket, message, strlen(message), 0);
-                // menerima kredensial
-
                 valread = read(new_socket, id, 1024);
                 if (valread < 1)
                 {
                     printf("eror recv\n");
                 }
                 printf("%s\n", id);
-                id[strcspn(id, "\n")] = 0;
-                // bzero(buffer, sizeof(buffer));
-
-                message = "password : ";
-                send(new_socket, message, strlen(message), 0);
-                // menerima kredensial
+                strtok(id, "\n");
+                char *message2 = "password : ";
+                send(new_socket, message2, strlen(message2), 0);
                 valread = read(new_socket, password, 1024);
                 if (valread < 1)
                 {
                     printf("eror recv\n");
                 }
                 printf("%s\n", password);
-                // password[strcspn(password, "\n")] = 0;
                 sprintf(buffer, "%s:%s", id, password);
                 printf("[Register] %s", buffer);
                 registerAkun(buffer);
                 bzero(buffer, sizeof(buffer));
 
-                message = "Server :[REGISTER] Register Berhasil Dilakukan\n";
+                message = "Server :Registrasi Berhasil Dilakukan\n";
                 send(new_socket, message, strlen(message), 0);
             }
             else if (strcmp(buffer, "3\n") == 0)
@@ -302,7 +307,7 @@ int main(int argc, char const *argv[])
             {
                 puts("loged in");
                 char *this = ""
-                             "Server: command : "
+                             "\nServer: command : \n"
                              "add\n"
                              "download\n"
                              "delete\n"
@@ -368,7 +373,7 @@ int main(int argc, char const *argv[])
                         slash = strtok(NULL, "/");
                     }
 
-                    sprintf(filenamepath, "FILES/%s\n", temp2[x - 1]);
+                    sprintf(filenamepath, "FILES/%s", temp2[x - 1]);
                     printf("file %s\n", filenamepath);
                     char bufferz[1024];
                     bzero(bufferz, sizeof(bufferz));
@@ -389,9 +394,9 @@ int main(int argc, char const *argv[])
                         {
                             break;
                         }
-                        if (n > 0 && strcmp(bufferz, "code_err") == 0)
+                        if (n > 0 && strcmp(bufferz, "error") == 0)
                         {
-                            printf("up\n");
+                            fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
                             break;
                         }
 
@@ -402,7 +407,7 @@ int main(int argc, char const *argv[])
 
                     tambahDB(publisher, tahun_publikasi, filenamepath, 0);
                 }
-                else if (strncmp(buffer2, "delete", 6) == 0)
+                if (strncmp(buffer2, "delete", 6) == 0)
                 {
                     // bzero(buffer2, sizeof(buffer2));
                     printf("%s\n", buffer2);
@@ -424,22 +429,21 @@ int main(int argc, char const *argv[])
                     printf("%s\n", cwd);
                     sprintf(old, "%s/FILES/old-%s", cwd, namafile);
                     sprintf(ano, "%s/FILES/%s", cwd, namafile);
+                    strtok(ano, "\n");
+                    strtok(old, "\n");
                     printf("%s\n", old);
                     printf("%s\n", ano);
                     status = rename(ano, old);
-                    while (status != 0)
-                    {
-                        status = rename(ano, old);
-                        if (status == 0)
-                        {
-                            printf("File renamed successfully");
-                        }
-                        else
-                        {
-                            printf("Error: unable to rename the file");
-                        }
-                    }
 
+                    if (status == 0)
+                    {
+                        printf("File renamed successfully");
+                    }
+                    else
+                    {
+                        printf("Error: unable to rename the file");
+                        fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+                    }
                     printf("done\n");
                 }
                 if (strncmp(buffer2, "see", 3) == 0)
@@ -453,17 +457,65 @@ int main(int argc, char const *argv[])
                 }
                 if (strncmp(buffer2, "download", 8) == 0)
                 {
-                    printf("under maintan\n");
+                    printf("%s\n", buffer2);
+                    int status;
+                    char namafile[4096];
+                    char old[1024];
+                    char ano[1024];
+                    // strcpy(namafile, buffer2);
+                    bzero(namafile, sizeof(namafile));
+                    valread = read(new_socket, namafile, 4096);
+                    if (valread < 1)
+                    {
+                        printf("recv err\n");
+                    }
+                    printf("nama file %s\n", namafile);
+                    printf("%s\n", cwd);
+                    sprintf(ano, "%s/FILES/%s", cwd, namafile);
+                    strtok(ano, "\n");
+                    printf("%s\n", ano);
+
+                    FILE *fp = fopen(ano, "r+");
+                    printf("%x\n", fp);
+                    char bufferz[1024];
+                    memset(bufferz, 0, 1024);
+                    if (fp > 0)
+                    {
+                        printf("Sending file: %s\n", ano);
+                    }
+                    else
+                    {
+                        printf("Failed to open file: %s\n", ano);
+                        send(new_socket, "error", 20, 0);
+                        // return;
+                    }
+                    bzero(bufferz, sizeof(bufferz));
+                    while (fgets(bufferz, 1024, fp) != NULL)
+                    {
+                        printf("tes");
+                        if (send(new_socket, bufferz, sizeof(bufferz), 0) == -1)
+                        {
+                            fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+                            exit(1);
+                        }
+                        bzero(bufferz, sizeof(bufferz));
+                    }
+                    fclose(fp);
+
+                    send(new_socket, "EOF", 10, 0);
+                    printf("done\n");
                 }
                 if (strncmp(buffer2, "quit", 4) == 0)
                 {
-                    break;
+                    printf("byebye\n");
+                    close(new_socket);
+                    return 0;
                 }
             }
         }
     }
 
-    printf("Login Berhasil\n");
+    printf("bye bye\n");
     close(new_socket);
     return 0;
 }
