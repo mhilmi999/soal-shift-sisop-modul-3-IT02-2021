@@ -68,6 +68,8 @@ void registerAkun(char *kredensial)
 
 void readDatabase()
 {
+    bzero(publisher, sizeof(publisher));
+    bzero(year, sizeof(year));
 
     FILE *fp = fopen("files.tsv", "r");
     char file_content[1024];
@@ -80,13 +82,13 @@ void readDatabase()
     char token2[100];
     char temp[100], temp2[100];
     char baris[100][1024];
-    printf("file con %s\n", file_content);
-    char *xyz = strtok(file_content, "\n");
-    while (xyz != NULL)
+
+    char *p = strtok(file_content, "\n");
+    while (p != NULL)
     {
-        printf("%s\n", xyz);
-        printf("len %d\n", strlen(xyz));
-        strcpy(baris[i], xyz);
+        printf("%s\n", p);
+        printf("len %d\n", strlen(p));
+        strcpy(baris[i], p);
         printf("%s\n", baris[i]);
         int n = 0;
         char *tok = strtok(baris[i], "< >");
@@ -98,31 +100,29 @@ void readDatabase()
             n++;
             tok = strtok(NULL, "< >");
         }
-        // printf("losss\n" );
-        sprintf(publisher[i], "%s", info[0]);
-        sprintf(year[i], "%s", info[1]);
+        printf("losss\n");
+        strcpy(publisher[i], info[0]);
+        strcpy(year[i], info[1]);
         printf("%s\n", publisher[i]);
         printf("%s\n", year[i]);
-        sprintf(temp, "%s", info[n - 1]);
+        strcpy(temp, info[n - 1]);
         printf("%s\n", temp);
-        sprintf(fullpath[i], "%s", temp);
+        strcpy(fullpath[i], temp);
         strcpy(token2, strtok(temp, "."));
         printf("tok2 %s\n", token2);
         // strcpy(ekstensi[i], token2);
         strcpy(token2, strtok(NULL, "."));
-        sprintf(ekstensi[i], "%s", token2);
+        strcpy(ekstensi[i], token2);
         // ekstensi[i] = token2;
         printf("%s\n", token2);
         char *token3 = strtok(temp, "/");
         strcpy(token2, strtok(NULL, "/"));
         // nama[i] = token2;
-        sprintf(nama[i], "%s", token2);
+        strcpy(nama[i], token2);
         printf("%s\n", nama[i]);
         i++;
         jumlahData++;
-        printf("jumlah data  %d\n", jumlahData);
-        xyz = strtok(NULL, "\n");
-        printf("new_p %s\n", xyz);
+        p = strtok(NULL, "\n");
     }
     fclose(fp);
 }
