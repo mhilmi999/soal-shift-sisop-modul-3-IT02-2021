@@ -1,15 +1,4 @@
-#include <stdio.h>
-#include <sys/socket.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <pthread.h>
-#include <errno.h>
-#include <sys/sendfile.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -68,8 +57,6 @@ void registerAkun(char *kredensial)
 
 void readDatabase()
 {
-    bzero(publisher, sizeof(publisher));
-    bzero(year, sizeof(year));
 
     FILE *fp = fopen("files.tsv", "r");
     char file_content[1024];
@@ -82,13 +69,13 @@ void readDatabase()
     char token2[100];
     char temp[100], temp2[100];
     char baris[100][1024];
-
-    char *p = strtok(file_content, "\n");
-    while (p != NULL)
+    printf("file con %s\n", file_content);
+    char *xyz = strtok(file_content, "\n");
+    while (xyz != NULL)
     {
-        printf("%s\n", p);
-        printf("len %d\n", strlen(p));
-        strcpy(baris[i], p);
+        printf("%s\n", xyz);
+        printf("len %d\n", strlen(xyz));
+        strcpy(baris[i], xyz);
         printf("%s\n", baris[i]);
         int n = 0;
         char *tok = strtok(baris[i], "< >");
@@ -100,7 +87,7 @@ void readDatabase()
             n++;
             tok = strtok(NULL, "< >");
         }
-        printf("losss\n");
+        // printf("losss\n" );
         strcpy(publisher[i], info[0]);
         strcpy(year[i], info[1]);
         printf("%s\n", publisher[i]);
@@ -120,9 +107,12 @@ void readDatabase()
         // nama[i] = token2;
         strcpy(nama[i], token2);
         printf("%s\n", nama[i]);
+        printf("%d -> %s -> %s -> %s -> %s -> %s lalal", i, xyz, publisher[i], year[i], fullpath[i], ekstensi[i]);
         i++;
         jumlahData++;
-        p = strtok(NULL, "\n");
+        printf("jumlah data  %d\n", jumlahData);
+        xyz = strtok(NULL, "\n");
+        printf("new_p %s\n", xyz);
     }
     fclose(fp);
 }

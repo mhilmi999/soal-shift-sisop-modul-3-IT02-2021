@@ -49,25 +49,166 @@ Source Code tersedia pada : [server.c](./soal1/Server/server.c)
 
 ## **Analisa Soal**
 
-Secara umum, kami menangkap bahwa program yang harus dibuat merupakan sebuah .....
+Secara umum, kami menangkap bahwa program yang harus dibuat merupakan sebuah penerapan dari socket programming dengan bantuan dari thread. Dimana server bisa menerima tidak hanya 1 client request saja. Soal ini akan membuat sebuah database file buku, dimana nanti akan diperlukan file tsv untuk databasenya bukunya, file akun.txt untuk verifikasi loginya, log penambahan dan pengurangan data dalam database, dan directory untuk file file yang disimpan dalam server-side. Selain itu juga sebagai client bisa mendownload file yang tersimpan di server, mendelete file pada server, menambahkan file atau database dan juga melihat dan mencari isi dalam database
 
 Hal-hal yang perlu diperhatikan diantaranya :
+1. Dikerjakan dalam socket programming dengan sisi server yang dapat menerima request lebih dari 1 client dalam waktu yang berbeda.
+2. Terdapat akun.txt sebagai database akun yang teregistrasi di server-side.
+3. Terdapat file files.tsv sebagai database di server-side.
+4. Terdapat directory FILES pada sisi server dimana sebagai path penyimpanan file.
+5. Dilarang menggunakan system() dan execv().
+6. Untuk download dan upload silahkan menggunakan file teks dengan ekstensi dan isi bebas (yang ada isinya bukan touch saja dan tidak kosong) dan requirement untuk benar adalah percobaan dengan minimum 5 data.
 
 
 <br>
 
 **Cara pengerjaan**
 ---
+Dalam menyelesaikan program yang diminta oleh [soal3](#soal-3), pertama-tama yang diperlukan adalah melakukan *import* library yang digunakan dalam socket programming :
+```c
+#include <pthread.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+```
 
 
 <br>
 
 ## Soal 1.a.
 ## **Analisa Soal**
+Pada soal 1.a sebagai permulaan dari soal ini terdapat beberapa kriteria utama yaitu server bisa multi-connection. Client bisa melakukan login dan register, client yang melakukan register akan memasukan id dan password yang nantinya disimpan dalam file akun.txt di server-side. Client yang memilih login akan memasukan id dan password, jika id dan passwordnya ada di dalam file akun.txt, client akan diarahkan ke fitur fitur program, namun jika id dan password tidak ada maka client akan diarahkan pada pilihan login, register, dan quit secara berulang.
 
 **Cara Pengerjaan**
 ---
-Dalam menjawab soal 1.a. kami membuat ...
+Dalam menjawab soal 1.a. kami membuat server yang bisa terkoneksi secara multi-connection dengan menambahkan argumen pada fungsi listen(), yaitu listen(server_fd, 3), 3 disini sebagai batas maksimal client yang dapat terkoneksi dengan server.
+
+```cpp
+if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
+    {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_fd, 3) < 0)
+    {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+```
+
+Untuk selanjutnya diperlukan fitur login dan register. Disini menggunakan session pada variabel otentikasi, dimana jika sudah login maka akan diganti nilai otentikasinya menjadi 1. Jika client memilih 1 maka akan diarahkan dalam fitur login dimana client akan mendapat tampilan untuk memasukan id dan password kemudian server akan me-concat inputan dari client supaya sesuai dengan database akun.txt
+
+```cpp
+int otentikasi = 0;
+        while (otentikasi == 0)
+        {
+            puts("otentikasi 0");
+            char *hello = "Server :\n1. Login \n2. Register \n3. Quit ";
+            send(new_socket, hello, strlen(hello), 0);
+            bzero(buffer, sizeof(buffer));
+            read(new_socket, buffer, 1024);
+            // login
+
+            if (strncmp(buffer, "1", 1) == 0)
+            {
+                puts("log");
+                char password[1024];
+                char login[1024];
+                // bzero(buffer, sizeof(buffer));
+                // mengirim pesan
+                char *message = "User ID :";
+                send(new_socket, message, strlen(message), 0);
+                // menerima kredensial
+                valread = read(new_socket, kredensial, 1024);
+                if (valread < 1)
+                {
+                    printf("eror recv\n");
+                }
+                printf("cred%s\n", kredensial);
+                kredensial[strcspn(kredensial, "\n")] = 0;
+                message = "password :";
+                send(new_socket, message, strlen(message), 0);
+                valread = read(new_socket, password, 1024);
+                if (valread < 1)
+                {
+                    printf("eror recv\n");
+                }
+                printf("pass %s\n", password);
+                sprintf(login, "%s:%s", kredensial, password);
+                printf("[LOGIN] %s", login);
+                strtok(login, "\n");
+                printf("len %d\n", strlen(login));
+                // printf("%s", buffer);
+                // Check login
+                otentikasi = checkLogin(login);
+                char isotentikasi[2];
+                memset(isotentikasi, 0, 2);
+                sprintf(isotentikasi, "%d", otentikasi);
+                // kirim otentikasi
+                printf("auth %d\n", otentikasi);
+                printf("auth %d\n", isotentikasi);
+                send(new_socket, isotentikasi, strlen(isotentikasi), 0);
+                // bzero(buffer, sizeof(buffer));
+                bzero(buffer, sizeof(buffer));
+            }
+            if (strncmp(buffer, "2", 1) == 0)
+            {
+                char id[1024];
+                char password[1024];
+                bzero(buffer, sizeof(buffer));
+                char *message = "user id : ";
+                send(new_socket, message, strlen(message), 0);
+                valread = read(new_socket, id, 1024);
+                if (valread < 1)
+                {
+                    printf("eror recv\n");
+                }
+                printf("%s\n", id);
+                strtok(id, "\n");
+                char *message2 = "password : ";
+                send(new_socket, message2, strlen(message2), 0);
+                valread = read(new_socket, password, 1024);
+                if (valread < 1)
+                {
+                    printf("eror recv\n");
+                }
+                printf("%s\n", password);
+                sprintf(buffer, "%s:%s", id, password);
+                printf("[Register] %s", buffer);
+                registerAkun(buffer);
+                bzero(buffer, sizeof(buffer));
+
+                message = "Server :Registrasi Berhasil Dilakukan\n";
+                send(new_socket, message, strlen(message), 0);
+            }
+
+```
 <br>
 
 ## Soal 1.b.
