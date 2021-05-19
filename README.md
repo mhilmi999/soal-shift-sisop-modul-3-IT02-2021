@@ -1671,7 +1671,7 @@ Pada soal 3.a kami diminta untuk membuat program dapat menerima inputan mode `-f
 **Cara Pengerjaan**
 ---
 Dalam menjawab soal 3.a. kami membuat inisialisasi variable, tipe data, dan melakukan memset pada variabel yang diperlukan dalam proses ini. Pertama-tama yang dilakukan adalah mengecek apakah argument yang diinputkan oleh pengguna merupakan `-f`. Selanjutnya dilakukan perulangan sebanyak dari argumen inputan file yang akan dikategorikan *user*. Lalu akan dilakukan pengkategorian dengan `thread` pada setiap argumen inputan file dan diteruskan ke dalam fungsi `eksekusi`.
-```c
+```cpp
 int main(int argc, char *argv[])
 {
     if (getcwd(cwd, sizeof(cwd)) != NULL)
@@ -1705,13 +1705,13 @@ Selanjutnya pada fungsi eksekusi setelah diberi argumen inputan file user yang p
 ```cpp
 void *eksekusi(void *arg)
 {
-    strcpy(abc, arg);
+    strcpy(inputanPath, arg);
     char *potongtitik, *potongslash;
 
     unsigned long i = 0;
     pthread_t id = pthread_self();
 
-    potongslash = strtok(abc, "/");
+    potongslash = strtok(inputanPath, "/");
     while (potongslash != NULL)
     {
         arr2[m] = potongslash;
@@ -1719,29 +1719,44 @@ void *eksekusi(void *arg)
         potongslash = strtok(NULL, "/");
     }
     strcpy(arr3, arr2[m - 1]);
-
-    potongtitik = strtok(arr2[m - 1], ".");
-    while (potongtitik != NULL)
-    {
-        arr[n] = potongtitik;
-        n++;
-        potongtitik = strtok(NULL, ".");
-    }
-
     char ekstensiFile[100];
-    strcpy(ekstensiFile, arr[n - 1]);
-    for (int i = 0; ekstensiFile[i]; i++)
+
+    if (strncmp(arr3, ".", 1) == 0)
     {
-        ekstensiFile[i] = tolower(ekstensiFile[i]);
+        strcpy(ekstensiFile, "hidden");
+        n = 2;
+    }
+    else
+    {
+        potongtitik = strtok(arr2[m - 1], ".");
+        while (potongtitik != NULL)
+        {
+            arr[n] = potongtitik;
+            n++;
+            potongtitik = strtok(NULL, ".");
+        }
+        if (n > 2)
+        {
+            sprintf(ekstensiFile, "%s.%s", arr[n - 2], arr[n - 1]);
+        }
+        else
+        {
+            strcpy(ekstensiFile, arr[n - 1]);
+        }
+
+        for (int i = 0; ekstensiFile[i]; i++)
+        {
+            ekstensiFile[i] = tolower(ekstensiFile[i]);
+        }
     }
 ```
-_catatan : Dalam melakukan pemotongan dari path file yang telah diinputkan oleh user, maka dibantu oleh fungsi `strtok()` dengan pemisahan batas 2 hal yaitu pertama berdasarkan slash `"/"` dan yang kedua berdasarkan titik `"."` jika berada pada posisi akhir dari path suatu argumen path inputan file. Selanjutnya pemisahan berdasarkan titik akan disimpan kedalam sebuah variable array `ekstensiFile` guna nantinya dalam pembuatan direktori yang akan dikelompokan berdasarkan file dengan ekstensi yang sesuai dan dilakukan perubahan menjadi semuanya `lower case`. Untuk nama file disimpan dalam variable array `arr[n]` guna memasukan ke dalam folder yang sesuai juga nantinya._
+_catatan : Dalam melakukan pemotongan dari path file yang telah diinputkan oleh user, maka dibantu oleh fungsi `strtok()` dengan pemisahan batas 2 hal yaitu pertama berdasarkan slash `"/"` dan yang kedua berdasarkan titik `"."` jika berada pada posisi akhir dari path suatu argumen path inputan file. Selanjutnya pemisahan berdasarkan titik akan disimpan kedalam sebuah variable array `ekstensiFile` guna nantinya dalam pembuatan direktori yang akan dikelompokan berdasarkan file dengan ekstensi yang sesuai dan dilakukan perubahan menjadi semuanya `lower case`, jika sebuah file dalam namanya terdapat lebih dari satu titik maka yang dijadikan folder adalah 2 kata sebelum dan sesudah titik terakhir dengan pengecekan berapakali strtok dipanggil. Untuk nama file disimpan dalam variable array `arr[n]` guna memasukan ke dalam folder yang sesuai juga nantinya._
 
 <br>
 
 Kemudian setelah didapatkan nama-nama folder yang telah dipotong-potong, maka hal selanjutnya adalah melakukan eksekusi untuk pembuatan dari folder berdasarkan nama-nama ekstensi file inputan pengguna. Pertama-tama yang dilakukan adalah melakukan pengecekan dari nama folder tersebut apakah ada atau tidak, dengan bantuan dari variable available yang secara default di set dengan nilai `0` maka hal ini berguna untuk pembuatan folder baru jika belum ada terhadap suatu ekstensi. Selanjutnya jika terdapat folder telah dibaut maka available akan diisi dengan nilai `1` dan tidak dibuatkan sebuah folder baru. Apabila suatu nama file tidak jelas atau tidak diketahui nama dari ekstensi filenya, maka akan secara default ditempatkan pada folder `Unknown`.
 ```cpp
-DIR *folder, *folderopen;
+    DIR *folder, *folderopen;
     struct dirent *entry;
     char tempat2[100], tempat3[100];
     folder = opendir(cwd);
@@ -1796,14 +1811,22 @@ Lalu setelah folder dengan masing-masing ekstensi dari nama file dibuat, maka ha
     }
     strcat(target, "/");
     strcat(target, arr3);
-    rename(source, target);
+    int thisre = rename(source, target);
+    if (thisre == 0)
+    {
+        status = 1;
+    }
+    else
+    {
+        status = 0;
+    }
     n = 0;
     m = 0;
 
     return NULL;
 }
 ```
-_catatan : Pemindahan file-file terhadap folder yang sesuai nama ekstensinya dibantu oleh fungsi `strcat()` dan melakukan pemindahan suatu file dari direktori lain ke *working directory* saat ini dengan bantuan fungsi `rename()` _
+_catatan : Pemindahan file-file terhadap folder yang sesuai nama ekstensinya dibantu oleh fungsi `strcat()` dan melakukan pemindahan suatu file dari direktori lain ke *working directory* saat ini dengan bantuan fungsi `rename()` jika rename mengembalikan 0 value maka rename sukses dan emngganti status menjadi 1_
 
 <br>
 
@@ -1812,7 +1835,7 @@ _catatan : Pemindahan file-file terhadap folder yang sesuai nama ekstensinya dib
 Pada soal ini kita akan memindahkan semua file yang terdapat dalam 1 directory. Prosesnya tidak terlalu banyak perbedaan dari soal 3.a dimana kita hanya perlu menghandle list file dalam directory sebelum menjalankan fungsi eksekusi.
 **Cara Pengerjaan**
 ---
-Guna menyelesaikan permasalahan b, kami mengikuti arahan dari Tips dengan menggunakan fungsi readdir dalam listing file yang terdapat dalam directory tersebut. Dimana kami akan mendefinisikan terlebih dahulu dengan typedata DIR, dilanjutkan dengan menggunakan fungsi `opendir()` untuk membantu proses listing file didalam directory tersebut. Setiap file yang terdapat dalam direktori tersebut diproses dalam fungsi yang sama dengan poin sebelumnya.
+Guna menyelesaikan permasalahan b, kami mengikuti arahan dari Tips dengan menggunakan fungsi readdir dalam listing file yang terdapat dalam directory tersebut. Dimana kami akan mendefinisikan terlebih dahulu dengan typedata DIR, dilanjutkan dengan menggunakan fungsi `opendir()` untuk membantu proses listing file didalam directory tersebut. Program akan mengecek apakah  Setiap file yang terdapat dalam direktori tersebut diproses dalam fungsi yang sama dengan poin sebelumnya. Pada poin ini program diminta harus rekursif dimana program tersebut bisa membaca file yang terdapat dalam sebuah directory. Disini kami akan melakukan pengecekan jika d_type nya bernilai 4 maka dia adalah directory yang selanjutnya akan coba dibaca list file didalamnya untuk dijalankan pada fungsi eksekusi. Pada fungsi eksekusi thread terdapat variabel global status yang ditujukan untuk mengetahui apakah proses rename atau pemindahan file berhasil atau tidak, jika status tetap 0 maka gagal untuk dipindahkan sedangkan 1 berhasil dipindahkan.
 
 ```cpp
 else if (strcmp(argv[1], "-d") == 0 && argc == 3)
@@ -1820,28 +1843,47 @@ else if (strcmp(argv[1], "-d") == 0 && argc == 3)
         i = 0;
         DIR *fd, *fdo;
         struct dirent *masuk;
+        struct dirent *lebihmasuk;
         char tempata[100], tempatb[100];
         fd = opendir(argv[2]);
         int available = 0;
-
         if (fd == NULL)
         {
-            printf("error\n");
+            printf("Yah, gagal disimpan :(\n");
         }
         while ((masuk = readdir(fd)))
         {
             if (!strcmp(masuk->d_name, ".") || !strcmp(masuk->d_name, ".."))
                 continue;
-            printf("%s %d\n", masuk->d_name, masuk->d_type);
-
-            int err;
-            sprintf(tempata, "%s/%s", argv[2], masuk->d_name);
-            if (masuk->d_type == 8)
+            if (masuk->d_type == 4)
             {
-                pthread_create(&(id_thread[i]), NULL, eksekusi, tempata); //membuat thread
-                pthread_join(id_thread[i], NULL);
-                i++;
+                DIR *dalemlagi;
+                char tempdalem[100];
+                sprintf(tempdalem, "%s/%s", argv[2], masuk->d_name);
+                dalemlagi = opendir(tempdalem);
+                while (lebihmasuk = readdir(dalemlagi))
+                {
+                    if (!strcmp(lebihmasuk->d_name, ".") || !strcmp(lebihmasuk->d_name, ".."))
+                        continue;
+                    sprintf(tempata, "%s/%s/%s", argv[2], masuk->d_name, lebihmasuk->d_name);
+                }
             }
+            else
+            {
+                sprintf(tempata, "%s/%s", argv[2], masuk->d_name);
+            }
+
+            pthread_create(&(id_thread[i]), NULL, eksekusi, tempata); 
+            pthread_join(id_thread[i], NULL);
+            i++;
+        }
+        if (status == 0)
+        {
+            printf("Yah, gagal disimpan :(\n");
+        }
+        else
+        {
+            printf("Direktori sukses disimpan!\n");
         }
     }
 ```
@@ -1849,32 +1891,199 @@ else if (strcmp(argv[1], "-d") == 0 && argc == 3)
 
 ## Soal 3.c.
 ## **Analisa Soal**
-
+Pada soal ini program akan dituntut untuk memindahkan semua file yang terdapat dalam listing directorynya. Soal ini tidak jauh berbeda dengan poin 3.b dimana pada soal ini kita akan bekerja dengan current working directory dimana program dijalankan.
 
 **Cara Pengerjaan**
 ---
-Dalam menjawab soal 1.c. kami menyelesaikannya dengan bantuan dari ......
+Dalam menjawab soal 1.c. kami menyelesaikannya dengan bantuan dari fungsi `getcwd()` dimana fungsi ini berguna untuk mengembalikan string path directory dimana sekarang program sedang dijalankan. Seperti biasa program akan melakukan listing file yang terdapat dalam curent work directory, dengan bantuan `readdir()`, jika d_type bernilai 4 yang menandakan dia adalah directory maka akan dilakukan rekursi untuk mendapat file file yang terdapat dalam sub-directorynya. Setiap file akan dimasukan dalam variabel tempata dan akan dikirimkan ke fungsi ekseksusi dengan bantuan thread untuk proses foldering.
+
+```cpp
+if (getcwd(gantiDir, sizeof(gantiDir)) != NULL)
+    {
+        printf("Current working dir: %s\n", gantiDir);
+    }
+
+....
+else if (strcmp(argv[1], "*") == 0 && argc == 2)
+{
+    i = 0;
+    DIR *fd, *fdo;
+    struct dirent *masuk;
+    struct dirent *lebihmasuk;
+    char tempata[100], tempatb[100];
+    fd = opendir(gantiDir);
+    int available = 0;
+
+    if (fd == NULL)
+    {
+        printf("error\n");
+    }
+    while ((masuk = readdir(fd)))
+    {
+        if (!strcmp(masuk->d_name, ".") || !strcmp(masuk->d_name, ".."))
+            continue;
+        if (masuk->d_type == 4)
+        {
+            DIR *dalemlagi;
+            char tempdalem[100];
+            sprintf(tempdalem, "%s/%s", gantiDir, masuk->d_name);
+            dalemlagi = opendir(tempdalem);
+            while (lebihmasuk = readdir(dalemlagi))
+            {
+                if (!strcmp(lebihmasuk->d_name, ".") || !strcmp(lebihmasuk->d_name, ".."))
+                    continue;
+                sprintf(tempata, "%s/%s/%s", gantiDir, masuk->d_name, lebihmasuk->d_name);
+            }
+        }
+        else
+        {
+            sprintf(tempata, "%s/%s", gantiDir, masuk->d_name);
+        }
+        pthread_create(&(id_thread[i]), NULL, eksekusi, tempata); //membuat thread
+        pthread_join(id_thread[i], NULL);
+        i++;
+    }
+
+    if (status == 0)
+    {
+        printf("Yah, gagal disimpan :(\n");
+    }
+    else
+    {
+        printf("Direktori sukses disimpan!\n");
+    }
+}
+```
 <br>
 
 ## Soal 3.d.
 
 ## **Analisa Soal**
-
+Pada soal ini kita diminta untuk menghandle beberapa tipe file yang tidak lumrah seperti file yang tidak memiliki ekstensi, file yang tersembunyi. Tujuan pada poin ini adalah terdapat folder Unknown untuk file yang tidak memiliki ekstensi dan folder hidden untuk file yang tersembunyi.
 
 **Cara Pengerjaan**
 ---
+Untuk folder unknown terjadi jika sebuah file tidak terdapat string `.` didalamnya, maka pada proses slicing titik hanya terjadi satu kali dan mengakibatkan nilai n menjadi 1. Variabel `arr2[m-1]` menyimpan nama file secara utuh tanpa pathnya, dari nama file ini dilakukan slicing dengan titik, jumlah slicing bisa dihitung dari banyaknya nilai pada variabel n dimana variabel n dinisiasi dengan 0 dan setidaknya proses pemotongan titik ini terjadi satu kali. Jika n itu tetap bernilai 1 maka program akan membuat directory Unknown dan akan mengeset target yang akan dipindahkan ke path folder Unknown tadi.
+```cpp
+void *eksekusi(void *arg)
+....
+    int n=0;
+    potongtitik = strtok(arr2[m - 1], ".");
+    while (potongtitik != NULL)
+    {
+        arr[n] = potongtitik;
+        n++;
+        potongtitik = strtok(NULL, ".");
+    }
+....
+    if (n > 1)
+    {
+        ....
+        proses pembuatan directory sesuai ekstensi
+        ....
+    }
+    else
+    {
+        sprintf(tempat2, "%s/Unknown", gantiDir);
+        mkdir(tempat2, 0777);
+    }
 
+    char source[1024], target[1024];
+    sprintf(source, "%s", arg);
 
+    if (n == 1)
+    {
+        sprintf(target, "%s/Unknown", gantiDir);
+    }
+....
+```
+_Code file tanpa ekstensi_
+
+Dalam file hidden, kami mengetahui bahwa file hidden char pertamanya pastilah `.` . Jadi pada variabel `arr3` yang akan menyimpan nama file secara utuh tanpa path-nya akan dilakukan pengecekan apakah char pertamanya `.` atau bukan, jika iya akan diset variabel `ekstensiFile` yang akan menjadi menjadi folder tujuan pemindahan file sebagai hidden, dan mengeset nilai n sebagai 2 karena pada unknown file handling sebelumnya jika n bernilai 1 maka file akan diarahkan ke folder Unknown.
+
+```cpp
+void *eksekusi(void *arg)
+{
+    strcpy(inputanPath, arg);
+    char *potongtitik, *potongslash;
+
+    unsigned long i = 0;
+    pthread_t id = pthread_self();
+
+    potongslash = strtok(inputanPath, "/");
+    while (potongslash != NULL)
+    {
+        arr2[m] = potongslash;
+        m++;
+        potongslash = strtok(NULL, "/");
+    }
+    strcpy(arr3, arr2[m - 1]);
+    char ekstensiFile[100];
+
+    if (strncmp(arr3, ".", 1) == 0)
+    {
+        strcpy(ekstensiFile, "hidden");
+        n = 2;
+    }
+```
+_Code handling hidden file_
 <br>
 
 ## Soal 3.e.
 
 ## **Analisa Soal**
-
+Untuk menyelesaikan soal pada poin 3.e dimana program dituntut untuk menjalankan setiap file yang dihandle dalam fungsi thread supaya file bisa diproses secara bersamaan dan tidak memakan banyak waktu. 
 
 **Cara Pengerjaan**
 ---
+Berikut adalah contoh pemanggilan fungsi thread pada fungsi tag `-f`. Dimana fungsi eksekusi akan dipanggil dengan `pthread_create((&(id_thread[i]), NULL, eksekusi, argv[j])` dimana variabel id_thread[] akan digunakan sebagai id dari thread yang berjalan, `ekseksui` adalah nama fungsi yang akan dipanggil dan `argv[j]` digunakan sebagai argument yang dikirimkan dalam fungsi eksekusi yaitu argument ketika menjalankan fitur tag `-f` yaitu path file yang akan dipindahkan.
 
+```cpp
+int i = 0, j = 0;
+if (strcmp(argv[1], "-f") == 0)
+    {
+        for (j = 2; j < argc; j++)
+        {
+            int err;
+            akhir = argc - 2;
+            pthread_create(&(id_thread[i]), NULL, eksekusi, argv[j]);
+            pthread_join(id_thread[i], NULL);
+            i++;
+        }
+```
+_Code thread pada tag `-f`_
+
+Penggunaan thread pada fungsi tag `*` dimana akan sangat mirip dalam pemanggilan dalam tag `-f` namun yang dijadikan sebagai argument ke fungsi eksekusi adalah path ke tiap file yang terdapat dalam directory program dijalankan.
+
+```cpp
+while ((masuk = readdir(fd)))
+{
+    if (!strcmp(masuk->d_name, ".") || !strcmp(masuk->d_name, ".."))
+        continue;
+    // printf("%s %d\n", masuk->d_name, masuk->d_type);
+    if (masuk->d_type == 4)
+    {
+        DIR *dalemlagi;
+        char tempdalem[100];
+        sprintf(tempdalem, "%s/%s", gantiDir, masuk->d_name);
+        dalemlagi = opendir(tempdalem);
+        while (lebihmasuk = readdir(dalemlagi))
+        {
+            if (!strcmp(lebihmasuk->d_name, ".") || !strcmp(lebihmasuk->d_name, ".."))
+                continue;
+            sprintf(tempata, "%s/%s/%s", gantiDir, masuk->d_name, lebihmasuk->d_name);
+        }
+    }
+    else
+    {
+        sprintf(tempata, "%s/%s", gantiDir, masuk->d_name);
+    }
+    pthread_create(&(id_thread[i]), NULL, eksekusi, tempata); //membuat thread
+    pthread_join(id_thread[i], NULL);
+    i++;
+}
+```
+_Code thread pada tag `*`_
 <br>
 
 
