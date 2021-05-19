@@ -65,7 +65,7 @@ Hal-hal yang perlu diperhatikan diantaranya :
 **Cara pengerjaan**
 ---
 Dalam menyelesaikan program yang diminta oleh [soal3](#soal-3), pertama-tama yang diperlukan adalah melakukan *import* library yang digunakan dalam socket programming :
-```c
+```cpp
 #include <pthread.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -80,8 +80,109 @@ Dalam menyelesaikan program yang diminta oleh [soal3](#soal-3), pertama-tama yan
 #include <fcntl.h>
 #include <sys/sendfile.h>
 ```
+- `<pthread.h>` library untuk mendapatkan ID dari pemanggilan sebuah thread(e.g. `pthread_self()`)
+- `<stdio.h>` library untuk fungsi input-output (e.g. `scanf()`)
+- `<sys/types.h>` library digunakan untuk identifikasi sebuah thread (e.g `pthread_t id_thread[3]`)
+- `<sys/socket.h>` library untuk membuat socket.
+- `<stdlib.h>` library untuk fungsi umum (e.g. `NULL`)
+- `<errno.h>` library untuk memberikan tambahan error pada sistem yang sesuai dengan IEEE Std 1003.1-2001  (e.g. `ECHILD`)
+- `<string.h>` library untuk melnampilkan pesan error apa saat gagal membuat thread dalam *development side* (e.g. `strerror()`)
+- `<arpa/inet.h>` library untuk melakukan koneksi socket
+- `<unistd.h>` library untuk mendapatkan lokasi direktori saat bekerja dimana (e.g. `getcwd()`)
+- `<netinet/in.h>` library untuk melakukan koneksi socket
+- `<sys/stat.h>` library untuk melakukan pemanggilan fungsi dalam pembuatan sebuah direktori baru (e.g. `mkdir()`)
+- `<fcntl.h>` library untuk handling file (e.g `open()`)
+- `<sys/sendfile.h>` library untuk mengirimkan data antar file descriptor
 
+Selain itu kami sangat terbantu dengan template socket programming yang terdapat dalam modul 3 sistem operasi. Kurang lebih dasar pengerjaan kami adalah modul tersebut yang selanjutnya dikembangkan.
 
+```cpp
+int main(int argc, char const *argv[])
+{
+    getcwd(cwd, sizeof(cwd));
+    int server_fd, new_socket, valread;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+    {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
+    {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+```
+_Code untuk memulai socket programming dalam server_
+
+```cpp
+int main(int argc, char const *argv[])
+{
+  getcwd(cwd, sizeof(cwd));
+  struct sockaddr_in address;
+  int sock = 0, valread;
+  struct sockaddr_in serv_addr;
+
+  int otentikasi = 0;
+
+  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+  {
+    printf("\n Socket creation error \n");
+    return -1;
+  }
+
+  memset(&serv_addr, '0', sizeof(serv_addr));
+
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_port = htons(PORT);
+
+  if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0)
+  {
+    printf("\nInvalid address/ Address not supported \n");
+    return -1;
+  }
+
+  if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+  {
+    printf("\nConnection Failed \n");
+    return -1;
+  }
+```
+_Code untuk memulai socket programming dalam client_
+<br>
+ Untuk melakukan transfer data antara client dan server kami menggunakan potongan program dibawah ini. Untuk mengirim dan menerima pesan dari server dan client kami menggunakan bantuan fungsi `send` untuk melakukan pengiriman buffer data,  `read` untuk menerima dan menyimpan variabel dari data yang dikirimkan, `bzero` untuk me-NULL-kan variabel buffer yang berguna untuk tempat pengiriman ataupun penerimaan data. 
+
+```cpp
+    char *message = "user id : ";
+    send(new_socket, message, strlen(message), 0);
+```
+_Code pengiriman data, argumen untuk fungsi `send` ada 4 yaitu `new_socket` sebagai variabel koneksi socket, `message` sebagai pesan yang dikirimkan, `strlen()` sebagai panjangnya data yang dikirimkan , dan 0 sebagai flags default dari fungsi `send`_
+
+```cpp
+    int valread;
+    char id[1024];
+    valread = read(new_socket, id, 1024);
+    if (valread < 1)
+    {
+        printf("eror recv\n");
+    }
+    printf("%s\n", id);
+    strtok(id, "\n");
+```
+_Code penerimaan data, dimana variabel valread nantinya akan menjadi status keberhasilan penerimaan data, jika fungsi `read` mengembalikan nilai -1 maka akan memunculkan pesan error recv. Fungsi `read` memiliki 3 argument yang pertama `new_socket` berarti file descriptor yang merupakan variabel connect ke server/client, `id` merupakan variabel buffer yang akan menerima pesan yang dikirimkan, dan argumen ketiga yaitu `1024` sebagai panjang file yang mampu ditampung fungsi read._
 <br>
 
 ## Soal 1.a.
@@ -325,26 +426,10 @@ while (otentikasi == 0)
 ```
 _Code client_
 <br>
-Potongan program untuk mengirim dan menerima pesan dari server dan client kami menggunakan bantuan fungsi `send` untuk melakukan pengiriman buffer data,  `read` untuk menerima dan menyimpan variabel dari data yang dikirimkan, `bzero` untuk me-NULL-kan variabel buffer yang berguna untuk tempat pengiriman ataupun penerimaan data. 
 
-```cpp
-    char *message = "user id : ";
-    send(new_socket, message, strlen(message), 0);
-```
-_Code pengiriman data, argumen untuk fungsi `send` ada 4 yaitu `new_socket` sebagai variabel koneksi socket, `message` sebagai pesan yang dikirimkan, `strlen()` sebagai panjangnya data yang dikirimkan , dan 0 sebagai flags default dari fungsi `send`_
 
-```cpp
-    int valread;
-    char id[1024];
-    valread = read(new_socket, id, 1024);
-    if (valread < 1)
-    {
-        printf("eror recv\n");
-    }
-    printf("%s\n", id);
-    strtok(id, "\n");
-```
-_Code penerimaan data, dimana variabel valread nantinya akan menjadi status keberhasilan penerimaan data, jika fungsi `read` mengembalikan nilai -1 maka akan memunculkan pesan error recv. Fungsi `read` memiliki 3 argument yang pertama `new_socket` berarti file descriptor yang merupakan variabel connect ke server/client, `id` merupakan variabel buffer yang akan menerima pesan yang dikirimkan, dan argumen ketiga yaitu `1024` sebagai panjang file yang mampu ditampung fungsi read._
+
+
 ## Soal 1.b.
 ## **Analisa Soal**
 Pada soal 1.b kita diharuskan untuk mempunyai database dengan nama files.tsv, yang akan menyimpan data publisher, tahun publikasi, dan path nama file yang ada di server. Selain itu juga harus terdapat folder FILES, yang akan menyimpan file file yang ditambahkan pada server.
@@ -362,6 +447,107 @@ Guna menyelesaikan permasalahan b, kami mengikuti arahan dari Tips dengan menggu
 ....
 ```
 _Code server_
+
+```cpp
+void readDatabase()
+{
+
+    FILE *filedb = fopen("files.tsv", "r");
+    char file_content[1024];
+    fseek(filedb, 0, SEEK_END);
+    long fsize = ftell(filedb);
+    rewind(filedb);
+    fread(file_content, 1, fsize, filedb);
+    int i;
+    i = 0;
+    char another_buffer[100][1024];
+    char token2[100];
+    char temp[100], temp2[100];
+    char baris[100][1024];
+    if (fsize == 0)
+    {
+        return;
+    }
+    printf("file con %s\n", file_content);
+    printf("%ld\n", fsize);
+    char *strmax;
+    char *xyz = strtok_r(file_content, "\n", &strmax);
+    int x = 0;
+    strcpy(baris[i], xyz);
+
+    while (xyz != NULL)
+    {
+        int n = 0;
+        char *tok = strtok(baris[x], "< >");
+        while (tok != NULL)
+        {
+            strcpy(info[n], tok);
+            n++;
+            tok = strtok(NULL, "< >");
+        }
+        if (info[0] > 0)
+        {
+            strcpy(publisher[x], info[0]);
+        }
+        else
+        {
+            strcpy(publisher[x], "error");
+        }
+
+        if (info[1] > 0)
+        {
+            strcpy(year[x], info[1]);
+        }
+        else
+        {
+            strcpy(year[x], "error");
+        }
+
+        if (info[n - 1] > 0)
+        {
+            strcpy(temp, info[n - 1]);
+        }
+        else
+        {
+            strcpy(temp, "error");
+        }
+        strcpy(fullpath[x], temp);
+
+        int another_counter = 0;
+        char *potongtitik;
+        potongtitik = strtok(temp, ".");
+        while (potongtitik != NULL)
+        {
+            strcpy(another_buffer[another_counter], potongtitik);
+            another_counter++;
+
+            potongtitik = strtok(NULL, ".");
+        }
+        if (another_buffer[1] > 0)
+        {
+            strcpy(ekstensi[x], another_buffer[1]);
+        }
+        else
+        {
+            strcpy(ekstensi[x], "no ekstensi");
+        }
+        char *token3 = strtok(temp, "/");
+        strcpy(token2, strtok(NULL, "/"));
+        strcpy(nama[x], token2);
+        printf("%d -> %s -> %s -> %s -> %s -> %s \n", x, xyz, publisher[x], year[x], fullpath[x], ekstensi[x]);
+        jumlahData++;
+        x++;
+        i++;
+        xyz = strtok_r(NULL, "\n", &strmax);
+        if (xyz != NULL)
+            strcpy(baris[x], xyz);
+    }
+    fclose(filedb);
+}
+```
+_code membaca database tiap memulai program server_
+Fungsi diatas akan selalu dijalankan terlebih dahulu ketika memulai server, dimana code diatas akan membaca file database dan menyimpannya dalam variabel variabel global untuk membantu menjalankan fungsi pada fitur fitur selanjutnya.
+
 <br>
 
 ## Soal 1.c.
@@ -418,9 +604,7 @@ if (strncmp(buffer2, "add", 3) == 0)
     slash = strtok(temp, "/");
     while (slash != NULL)
     {
-        // printf("slashing\n");
         temp2[x] = slash;
-        // printf("mp2 %s\n", temp2[x]);
         x++;
         slash = strtok(NULL, "/");
     }
@@ -672,7 +856,8 @@ if (strncmp(buffer2, "download", 8) == 0)
 ```
 _Code Client dalam fitur download_
 
-Dalam sisi client akan mengirimkan command seperti `download rop.py` , rop.py adalah nama file yang ingin di-download oleh client, Dari command client yang berbentuk seperti itu, Code akan memotong perintah client menjadi dua bagian, yang pertama adalah `download` yang kedua `rop.py` atau nama file yang diminta client. Perintah pertama ini akan 
+Dalam sisi client akan mengirimkan command seperti `download rop.py` , rop.py adalah nama file yang ingin di-download oleh client, Dari command client yang berbentuk seperti itu, Code akan memotong perintah client menjadi dua bagian, yang pertama adalah `download` yang kedua `rop.py` atau nama file yang diminta client. Perintah pertama ini akan menjadi penanda command apa yang diberikan client dan potongan kedua menjadi nama file yang akan didownload oleh client. Server akan mengembalikan apakah file tersebut terdapat di server atau tidak, jika iya client akan melakukan proses penerimaan file jika tidak menerima pesan bahwa file gagal dikirim.
+
 
 ```cpp
 if (strncmp(buffer2, "download", 8) == 0)
@@ -749,48 +934,413 @@ if (strncmp(buffer2, "download", 8) == 0)
 ```
 _Code sisi server untuk fitur download_
 
+Pada sisi server setelah menerima perintah `download` maka server akan menerima nama file yang diminta. Server akan melakukan pengecekan pada variabel global yang sudah di-assign pada saat menjalankan server. Jika terdapat nama file yang sama dari yang diminta dan disimpan dalam database maka akan diproses untuk pengiriman dari server ke client. 
 
 <br>
 
 ## Soal 1.e.
 
 ## **Analisa Soal**
-
+Pada soal ini client dapat melakukan delete file yang terdapat pada server. Namun file harus dicek terlebih dahulu apakah memang benar tersedia atau tidak dalam database. Selain itu sebenarnya server tidak menghapus file namun merubah namanya menjadi old-namafile.ekstensi dan menghapusnya dari list file database. 
 
 **Cara Pengerjaan**
 ---
+Dalam pengerjaannya kami akan menggunakan fungsi-fungsi yang sudah dibuild sebelumnya seperti pemotongan antara command dan nama file pada fungsi download, begitu juga dengan penerimaan dan pengiriman data melalui socket programming. Selain itu kami juga menggunakan bantuan dari fungsi rename, karena juga perlu diperhatikan bahwasanya tidak boleh menggunakan fungsi system dan execve untuk mengganti nama file yang hendak dihapus. Untuk menghapus list file dalam database kami akan membuat sebuah temporary database dan menuliskan ulang semua database kecuali untuk path file yang akan di-delete.
+
+```cpp
+if (strncmp(buffer2, "delete", 6) == 0)
+{
+    char *namafile;
+    char *tmp;
+    char *tmp2[50];
+    char buff[1024];
+    tmp = strtok(buffer2, " ");
+    int n;
+    n = 0;
+    while (tmp != NULL)
+    {
+    tmp2[n] = tmp;
+    n++;
+    tmp = strtok(NULL, " ");
+    }
+    strtok(buffer2, "delete ");
+    printf("%s\n", tmp2[n - 1]);
+    send(sock, tmp2[n - 1], sizeof(tmp2[n - 1]), 0);
+    printf("%s\n", tmp2[n - 1]);
+    valread = read(sock, buff, 1024);
+    if (valread < 1)
+    {
+    printf("delete eror recv\n");
+    }
+    printf("%s\n", buff);
+}
+```
+_Code client saat mengirimkan request delete_
+
+Dalam sisi client akan mengirimkan command seperti `delete rop.py` , rop.py adalah nama file yang ingin di-delete oleh client, Dari command client yang berbentuk seperti itu, Code akan memotong perintah client menjadi dua bagian, yang pertama adalah `delete` yang kedua `rop.py` atau nama file yang diminta client. Perintah pertama ini akan menjadi penanda command apa yang diberikan client dan potongan kedua menjadi nama file yang akan di-delete oleh client. Server akan mengembalikan apakah file tersebut terdapat di server atau tidak.
+
+```cpp
+if (strncmp(buffer2, "delete", 6) == 0)
+{
+    printf("%s\n", buffer2);
+    int status, avail = 0, pcc;
+    char namafile[1024];
+    char old[1024];
+    char ano[1024];
+    char filedb_temp[1024];
+    strcpy(namafile, buffer2);
+    bzero(namafile, sizeof(namafile));
+    valread = read(new_socket, namafile, 1024);
+    if (valread < 1)
+    {
+        printf("recv err\n");
+    }
+    printf("jumlah data %d\n", jumlahData);
+    printf("nama file %s\n", namafile);
+    printf("%s\n", cwd);
+    sprintf(old, "%s/FILES/old-%s", cwd, namafile);
+    sprintf(ano, "%s/FILES/%s", cwd, namafile);
+    strtok(ano, "\n");
+    strtok(old, "\n");
+    sprintf(filedb_temp, "FILES/%s", namafile);
+    strtok(filedb_temp, "\n");
+    for (int i = 0; i < jumlahData; i++)
+    {
+        if (strcmp(fullpath[i], filedb_temp) == 0)
+        {
+            avail = 1;
+            pcc = i;
+            break;
+        }
+    }
+
+    if (avail == 0)
+    {
+        char *msg404 = "Maaf file tidak ditemukan";
+        send(new_socket, msg404, strlen(msg404), 0);
+    }
+    else
+    {
+        printf("%s\n", old);
+        printf("%s\n", ano);
+        status = rename(ano, old);
+
+        if (status == 0)
+        {
+            printf("File renamed successfully");
+
+            FILE *file_new_db;
+            for (int i = 0; i <= jumlahData - 1; i++)
+            {
+                if (i == pcc)
+                {
+                    continue;
+                }
+                else
+                {
+
+                    file_new_db = fopen("temp.tsv", "a+");
+                    fprintf(file_new_db, "%s< >%s< >%s\n", publisher[i], year[i], fullpath[i]);
+                }
+            }
+            printf("keluar\n");
+            fclose(file_new_db);
+            char tsv_temp[1024];
+            char tsv_new[1024];
+            int re_status;
+            printf("%s\n", cwd);
+            sprintf(tsv_temp, "%s/files.tsv", cwd);
+            sprintf(tsv_new, "%s/temp.tsv", cwd);
+            re_status = rename(tsv_temp, tsv_new);
+            if (re_status == 0)
+            {
+                char log[1024];
+                sprintf(log, "hapus: %s", namafile);
+                runninglog(log);
+                printf("Database change!\n");
+            }
+            else
+            {
+                printf("Database error\n");
+                fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+            }
+            char *del_success = "Delete file success!";
+            send(new_socket, del_success, strlen(del_success), 0);
+        }
+        else
+        {
+            printf("Error: unable to rename the file");
+            fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+        }
+        printf("done\n");
+}
+```
+_Code server untuk handling command `delete`_
+
+Dalam sisi server sendiri akan melakukan iterasi pengecekan apakah filenya terdapat di database atau tidak, seperti pada fungsi selanjutnya. Jika filenya terdapat di database maka akan melakukan proses rename file, jika file berhasil di-rename maka akan dilakukan penulisan database ulang tanpa menuliskan database yang dihapuskan.
 
 <br>
 
 ## Soal 1.f.
 
 ## **Analisa Soal**
+Pada soal ini kita diminta untuk bisa mengembalikan data didalam database dengan format :
+```
+Nama:
+Publisher:
+Tahun publishing:
+Ekstensi File : 
+Filepath : 
 
+Nama:
+Publisher:
+Tahun publishing:
+Ekstensi File : 
+Filepath : 
 
+```
+Dari format yang diberikan, soal ini lebih mengarah ke penanganan string untuk melakukan slicing dari value dalam database dan dibagi menjadi publisher, tahun publikasi, ekstensi file, nama file, dan filepath pada server.
 **Cara Pengerjaan**
 ---
+untuk mengerjakan poin 1.f kami sangat terbantu dengan fungsi yang sudah di-build sebelumnya, yaitu fungsi `readDatabase()` yanng dijalankan setiap memulai server. Karena pada fungsi tersebut sekaligus kami melakukan slicing untuk publisher, tahun publikasi, ekstensi file, nama file, dan filepath yang di-assign dalam global variabel. Jadi dalam fitur see ini kami akan melakukan looping sebanyak jumlah data dalam database dan melakuna concat-ing untuk semua datanya sesuai format yang diberikan dan mengirimkanya ke client.
 
+```cpp
+if (strncmp(buffer2, "see", 3) == 0)
+{
+    bzero(buffer2, sizeof(buffer2));
+    char see[4096];
+    bzero(see, sizeof(see));
+    valread = read(sock, see, 4096);
+    if (valread < 1)
+    {
+    printf("eror recv\n");
+    }
+    printf("%s", see);
+    bzero(see, sizeof(see));
+}
+```
+_Code client side untuk fitur see_
+
+Pada susu client seperti biasa jika memasukan command see akan menerima data yang dikirimkan server dan menampilkanya namun jika terdapat error dalam penerimaan data akan dimunculkan `error recv`.
+
+```cpp
+void see(int new_socket, int n)
+{
+    char result[4096];
+    bzero(result, sizeof(result));
+    n = 0;
+    strcpy(result, "");
+    while (n < jumlahData - 1)
+    {
+        printf("n %d\n", n);
+        strcat(result, "Nama: ");
+        strcat(result, nama[n]);
+        strcat(result, "\nPublisher: ");
+        strcat(result, publisher[n]);
+        strcat(result, "\nTahun Publik: ");
+        strcat(result, year[n]);
+        strcat(result, "\nEkstensi file: ");
+        strcat(result, ekstensi[n]);
+        strcat(result, "\nFilepath: ");
+        strcat(result, fullpath[n]);
+        strcat(result, "\n");
+        printf("result %s\n", result);
+        n++;
+    }
+    send(new_socket, result, strlen(result), 0);
+}
+```
+_Code dari sisi server untuk handling command see yang dikirimkan client_
+
+Pada sisi server karena tadinya sudah mendapatkan command see dari client maka server akan mengambil semua data dari variabel `nama[]` yang berisi nama file, `publisher[]` yang berisi nama publishernya, `year[]` yang berisi taun publikasi, `ekstensi[]` yang berisi ekstensi file yang disimpan, dan `fullpath[]` yang berisi Path file yang disimpan dalam server. Variabel `jumlahData` menandakan jumlah data yang terdapat di database. Program akan melakukan concatenasi dengan bantuan fungsi `strcat` untuk setiap blok format dan mengirimkanya secara utuh jika semua data di global variabel sudah dibaca.
 <br>
 
 
 ## Soal 1.g.
 
 ## **Analisa Soal**
+Pada soal ini kami akan melakukan pengecekan apakah sebuah potongan string yang dikirimkan oleh client terdapat dalam nama file yang ada di server. Perlu diperhatikan bahwasanya bisa saja client hanya mengirimkan 2 char dan server harus bisa mendapatkan data secara utuh dan mengembalikanya ke client dengan format : 
 
+```
+Nama:
+Publisher:
+Tahun publishing:
+Ekstensi File : 
+Filepath : 
+
+```
 
 **Cara Pengerjaan**
 ---
+Dalam proses pengerjaan poin ini kami menggunakan bantuan dari fungsi `strstr` yang akan bekerja sebagai filter apakaha dalam variabel `fullpath[]` terdapat string yang diminta. Fungsi strstr akan mengembalikan substring yang ditemukan dalam variabel atau NULL jika tidak menemukanya.
 
+```cpp
+if (strncmp(buffer2, "find", 4) == 0)
+{
+    char *namafile;
+    char *tmp;
+    char buff[1024];
+    char *tmp2[50];
+    tmp = strtok(buffer2, " ");
+    int n;
+    n = 0;
+    while (tmp != NULL)
+    {
+    tmp2[n] = tmp;
+    n++;
+    tmp = strtok(NULL, " ");
+    }
+    strtok(buffer2, "find ");
+    printf("%s\n", tmp2[n - 1]);
+    send(sock, tmp2[n - 1], sizeof(tmp2[n - 1]), 0);
+    printf("%s\n", tmp2[n - 1]);
+    valread = read(sock, buff, 4096);
+    if (valread < 1)
+    {
+    printf("find eror recv\n");
+    }
+    printf("%s\n", buff);
+
+    if (strncmp(buff, "file ditemukan", 14) == 0)
+    {
+    bzero(buff, sizeof(buff));
+    valread = read(sock, buff, 4096);
+    if (valread < 1)
+    {
+        printf("find eror recv\n");
+    }
+    printf("%s\n", buff);
+    }
+}
+```
+_Code fitur see dari sisi client_
+Client akan mengirimkan command `see ro` misalnya, kemudian akan di-slice antara command dan string yang akan dicari dimana pada contoh string yang dicari adalah ro. Server akan memproses pengiriman client ini dan akan mengembalikan sesuai hasil yang didapatkan.
+
+```cpp
+if (strncmp(buffer2, "find", 4) == 0)
+{
+    int status = 0, index[100];
+    int n = 0;
+    char namafile[1024];
+    char old[1024];
+    char *ano;
+    char show_find[1024];
+    strcpy(namafile, buffer2);
+    bzero(namafile, sizeof(namafile));
+    valread = read(new_socket, namafile, 1024);
+    if (valread < 1)
+    {
+        printf("recv err\n");
+    }
+    printf("nama file %s\n", namafile);
+    strtok(namafile, "\n");
+    for (int i = 0; i < jumlahData; i++)
+    {
+        printf("%d\n", i);
+        printf("%s\n", fullpath[i]);
+        printf("nama file %s\n", namafile);
+        ano = strstr(fullpath[i], namafile);
+        if (ano)
+        {
+            status = 1;
+            index[n] = i;
+            n++;
+        }
+    }
+
+    if (status == 0)
+    {
+        char *msg = "file tidak ditemukan";
+        send(new_socket, msg, strlen(msg), 0);
+    }
+    else
+    {
+        char *msg = "file ditemukan";
+        send(new_socket, msg, strlen(msg), 0);
+    }
+
+    strcpy(show_find, "");
+    for (int i = 0; i < n; i++)
+    {
+        strcat(show_find, "Nama: ");
+        strcat(show_find, nama[index[i]]);
+        strcat(show_find, "\nPublisher: ");
+        strcat(show_find, publisher[index[i]]);
+        strcat(show_find, "\nTahun Publik: ");
+        strcat(show_find, year[index[i]]);
+        strcat(show_find, "\nEkstensi file: ");
+        strcat(show_find, ekstensi[index[i]]);
+        strcat(show_find, "\nFilepath: ");
+        strcat(show_find, fullpath[index[i]]);
+        strcat(show_find, "\n");
+    }
+    if (n > 0)
+        send(new_socket, show_find, strlen(show_find), 0);
+}
+```
+_Code pada sisi server untuk handle fitur find_
+Dalam server sendiri telah menerima string yang dicari dan disimpan dalam variabel `namaFile`, kemudian dari variabel `namaFile` ini dengan bantuan fungsi `strstr` akan dilakukan iterasi sebanyak jumlah dari variabel `fullpath[]`, jika didapatkan maka akan melakukan penambahan dari counter yang nantinya digunakan dalam proses iterasi pembuatan pesan yang akan dikirimkan ke client. Ketika sudah didapatkan berapa jumlah nama file yang mengandung string tersebut akan melakukan concat-ing seperti fitur see dan mengirimkanya ke client. Kami juga memanfaatkan variabel global yang sudah dijelaskan dalam fitur see untuk mengirimkan sesuai dengang format messagenya.
 <br>
 
 ## Soal 1.h.
 
 ## **Analisa Soal**
+Pada soal ini, server diminta untuk membuat sebuah file `running.log` dimana file ini akan digunakan sebagai log, jika terdapat penambahan ataupun penghapusan file. File log ini mempunyai format yang sudah ditentukan yaitu seperti ini:
 
+```
+Tambah : File1.ektensi (id:pass)
+Hapus : File2.ektensi (id:pass)
+```
 
 **Cara Pengerjaan**
 ---
+Poin soal ini hanya akan memengaruhi code dalam sisi server saja, Dimana saya membuat fungsi `runninglog()` dengan argument pesan yang akan ditambahkan dalam file ini. Fungsinya cukup sederhana, dengan bantuan file descriptor kita akan membuak file dengan tag a+ dimana ini akan meng-append dan juga membuat file tersebut jika masih belum tersedia, dan selanjutnya akan mengisi filenya dengan bantuan `fprintf()`.
+```cpp
+void runninglog(char *log)
+{
+    FILE *file_log;
+    char file_content[1024];
+    file_log = fopen("runing.log", "a+");
+    fseek(file_log, 0, SEEK_END);
+    long fsize = ftell(file_log);
+    rewind(file_log);
+    fread(file_content, 1, fsize, file_log);
+    fprintf(file_log, "%s\n", log);
+    fclose(file_log);
+}
+```
+_Code runninglog dalam server_
 
+Fungsi ini akan dipanggil ketika menggunakan fitur add dan delete, berikut untuk snippet codenya.
+
+```cpp
+void tambahDB(char *temp_publish, char *tahun_publikasi, char *filenamepath, char *fileekstensi, int n)
+{
+    char tmp[1024];
+    ....
+    sprintf(tmp, "tambah: %s\n", fileekstensi);
+    runninglog(tmp);
+}
+```
+_Code menambahakan log pada saat menggunakan fitur add_
+
+```cpp
+if (strncmp(buffer2, "delete", 6) == 0)
+{
+....
+        re_status = rename(tsv_temp, tsv_new);
+        if (re_status == 0)
+        {
+            char log[1024];
+            sprintf(log, "hapus: %s", namafile);
+            runninglog(log);
+            printf("Database change!\n");
+        }
+....
+}
+    
+```
+_Code menambahkan log pada saat menggunakan fitur delete, Code ini dijalankan ketika sudah berhasil membuat database baru_
 <br>
 
 **Screenshoot Hasil Run Program Soal Nomor 1 Client**\
@@ -861,7 +1411,7 @@ Soal meminta untuk membuat program perkalian matriks `4x3` dan `3x6` serta menam
 **Cara Pengerjaan**
 ---
 Perkalian dilakukan antara matriks `4x3` dan `3x6` sehingga menghasilkan matriks `4x6`. Dalam perkalian matriks, kami menggunakan `thread "kali matriks"` dengan detil *code* sebagai berikut :
-```c
+```cpp
 void *kalimatriks(void *arg)
 {
     pthread_t id = pthread_self();
@@ -1097,7 +1647,7 @@ Dalam menyelesaikan program yang diminta oleh [soal3](#soal-3), pertama-tama yan
 - `<sys/stat.h>` library untuk melakukan pemanggilan fungsi dalam pembuatan sebuah direktori baru (e.g. `mkdir()`)
 - `<ctype.h>` library untuk melakukan konversi menjadi *lower case*  (e.g. `_tolower_()`)
 - `<dirent.h>` library untuk membuka, membaca, dan menutup dari sebuah direktori (e.g. `opendir(), closedir(), readdir()`)
-- `<errno.h>` ibrary untuk memberikan tambahan error pada sistem yang sesuai dengan IEEE Std 1003.1-2001  (e.g. `ECHILD`)
+- `<errno.h>` library untuk memberikan tambahan error pada sistem yang sesuai dengan IEEE Std 1003.1-2001  (e.g. `ECHILD`)
 - `<math.h>` library untuk mendefinisikan ragam fungsi dari matematika dalam satu makro (e.g. `HUGE_VAL`)
 - `<pthread.h>` library untuk mendapatkan ID dari pemanggilan sebuah thread(e.g. `pthread_self()`)
 - `<semaphore.h>` library untuk melakukan operasi *semaphore* (e.g. `sem_t()`)
@@ -1152,7 +1702,7 @@ _catatan : Dalam melakukan pengkategorian argumen file inputan user dilakukan de
 <br>
 
 Selanjutnya pada fungsi eksekusi setelah diberi argumen inputan file user yang pertama hingga ke - N akan melakukan pemanggilan id thread dan melakukan pemotongan dari path yang telah diberikan pada argumen user tadi. Pemotongan ini bertujuan untuk mendapatkan nama file dan ekstensi file tersebut. Setelah mendapatkannya ekstensi file nantinya akan dijadikan sebagai nama folder baru terhadap *working directory* dengan pemindahan nama file yang telah didapatkan tadi.
-```c
+```cpp
 void *eksekusi(void *arg)
 {
     strcpy(abc, arg);
@@ -1190,7 +1740,7 @@ _catatan : Dalam melakukan pemotongan dari path file yang telah diinputkan oleh 
 <br>
 
 Kemudian setelah didapatkan nama-nama folder yang telah dipotong-potong, maka hal selanjutnya adalah melakukan eksekusi untuk pembuatan dari folder berdasarkan nama-nama ekstensi file inputan pengguna. Pertama-tama yang dilakukan adalah melakukan pengecekan dari nama folder tersebut apakah ada atau tidak, dengan bantuan dari variable available yang secara default di set dengan nilai `0` maka hal ini berguna untuk pembuatan folder baru jika belum ada terhadap suatu ekstensi. Selanjutnya jika terdapat folder telah dibaut maka available akan diisi dengan nilai `1` dan tidak dibuatkan sebuah folder baru. Apabila suatu nama file tidak jelas atau tidak diketahui nama dari ekstensi filenya, maka akan secara default ditempatkan pada folder `Unknown`.
-```c
+```cpp
 DIR *folder, *folderopen;
     struct dirent *entry;
     char tempat2[100], tempat3[100];
@@ -1232,7 +1782,7 @@ _catatan : Pembuatan folder dan pemindahan nya ini dibantu oleh library `dirent`
 <br>
 
 Lalu setelah folder dengan masing-masing ekstensi dari nama file dibuat, maka hal selanjutnya ialah memasukan file-file tersebut sesuai dengan ekstensinya.
-```c
+```cpp
  char source[1024], target[1024];
     sprintf(source, "%s", arg);
 
@@ -1259,11 +1809,42 @@ _catatan : Pemindahan file-file terhadap folder yang sesuai nama ekstensinya dib
 
 ## Soal 3.b.
 ## **Analisa Soal**
-
+Pada soal ini kita akan memindahkan semua file yang terdapat dalam 1 directory. Prosesnya tidak terlalu banyak perbedaan dari soal 3.a dimana kita hanya perlu menghandle list file dalam directory sebelum menjalankan fungsi eksekusi.
 **Cara Pengerjaan**
 ---
-Guna menyelesaikan permasalahan b, kami mengikuti arahan dari Tips dengan menggunakan ....
+Guna menyelesaikan permasalahan b, kami mengikuti arahan dari Tips dengan menggunakan fungsi readdir dalam listing file yang terdapat dalam directory tersebut. Dimana kami akan mendefinisikan terlebih dahulu dengan typedata DIR, dilanjutkan dengan menggunakan fungsi `opendir()` untuk membantu proses listing file didalam directory tersebut. Setiap file yang terdapat dalam direktori tersebut diproses dalam fungsi yang sama dengan poin sebelumnya.
 
+```cpp
+else if (strcmp(argv[1], "-d") == 0 && argc == 3)
+    {
+        i = 0;
+        DIR *fd, *fdo;
+        struct dirent *masuk;
+        char tempata[100], tempatb[100];
+        fd = opendir(argv[2]);
+        int available = 0;
+
+        if (fd == NULL)
+        {
+            printf("error\n");
+        }
+        while ((masuk = readdir(fd)))
+        {
+            if (!strcmp(masuk->d_name, ".") || !strcmp(masuk->d_name, ".."))
+                continue;
+            printf("%s %d\n", masuk->d_name, masuk->d_type);
+
+            int err;
+            sprintf(tempata, "%s/%s", argv[2], masuk->d_name);
+            if (masuk->d_type == 8)
+            {
+                pthread_create(&(id_thread[i]), NULL, eksekusi, tempata); //membuat thread
+                pthread_join(id_thread[i], NULL);
+                i++;
+            }
+        }
+    }
+```
 <br>
 
 ## Soal 3.c.
