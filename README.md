@@ -121,121 +121,633 @@ if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
         exit(EXIT_FAILURE);
     }
 ```
+_Code server_
 
-Untuk selanjutnya diperlukan fitur login dan register. Disini menggunakan session pada variabel otentikasi, dimana jika sudah login maka akan diganti nilai otentikasinya menjadi 1. Jika client memilih 1 maka akan diarahkan dalam fitur login dimana client akan mendapat tampilan untuk memasukan id dan password kemudian server akan me-concat inputan dari client supaya sesuai dengan database akun.txt
+```cpp
+
+  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+  {
+    printf("\n Socket creation error \n");
+    return -1;
+  }
+
+  memset(&serv_addr, '0', sizeof(serv_addr));
+
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_port = htons(PORT);
+
+  if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0)
+  {
+    printf("\nInvalid address/ Address not supported \n");
+    return -1;
+  }
+
+  if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+  {
+    printf("\nConnection Failed \n");
+    return -1;
+  }
+```
+_Code Client_
+<br>
+Untuk selanjutnya diperlukan fitur login dan register. Disini menggunakan session pada variabel otentikasi, dimana jika sudah login maka akan diganti nilai otentikasinya menjadi 1. Jika client memilih 1 maka akan diarahkan dalam fitur login dimana client akan mendapat tampilan untuk memasukan id dan password kemudian server akan me-concat inputan dari client supaya sesuai dengan database akun.txt. Jika client memilih 2 maka client akan memasukan id dan password yang nantinya dimasukan server kedalam file akun.txt pada sisi server.
 
 ```cpp
 int otentikasi = 0;
-        while (otentikasi == 0)
+while (otentikasi == 0)
+{
+    puts("otentikasi 0");
+    char *hello = "Server :\n1. Login \n2. Register \n3. Quit ";
+    send(new_socket, hello, strlen(hello), 0);
+    bzero(buffer, sizeof(buffer));
+    read(new_socket, buffer, 1024);
+    if (strncmp(buffer, "1", 1) == 0)
+    {
+        puts("log");
+        char password[1024];
+        char login[1024];
+        char *message = "User ID :";
+        send(new_socket, message, strlen(message), 0);
+        valread = read(new_socket, kredensial, 1024);
+        if (valread < 1)
         {
-            puts("otentikasi 0");
-            char *hello = "Server :\n1. Login \n2. Register \n3. Quit ";
-            send(new_socket, hello, strlen(hello), 0);
-            bzero(buffer, sizeof(buffer));
-            read(new_socket, buffer, 1024);
-            // login
+            printf("eror recv\n");
+        }
+        printf("cred%s\n", kredensial);
+        kredensial[strcspn(kredensial, "\n")] = 0;
+        message = "password :";
+        send(new_socket, message, strlen(message), 0);
+        valread = read(new_socket, password, 1024);
+        if (valread < 1)
+        {
+            printf("eror recv\n");
+        }
+        printf("pass %s\n", password);
+        sprintf(login, "%s:%s", kredensial, password);
+        printf("[LOGIN] %s", login);
+        strtok(login, "\n");
+        printf("len %d\n", strlen(login));
+        otentikasi = checkLogin(login);
+        char isotentikasi[2];
+        memset(isotentikasi, 0, 2);
+        sprintf(isotentikasi, "%d", otentikasi);
+        printf("auth %d\n", otentikasi);
+        printf("auth %d\n", isotentikasi);
+        send(new_socket, isotentikasi, strlen(isotentikasi), 0);
+        bzero(buffer, sizeof(buffer));
+    }
+    if (strncmp(buffer, "2", 1) == 0)
+    {
+        char id[1024];
+        char password[1024];
+        bzero(buffer, sizeof(buffer));
+        char *message = "user id : ";
+        send(new_socket, message, strlen(message), 0);
+        valread = read(new_socket, id, 1024);
+        if (valread < 1)
+        {
+            printf("eror recv\n");
+        }
+        printf("%s\n", id);
+        strtok(id, "\n");
+        char *message2 = "password : ";
+        send(new_socket, message2, strlen(message2), 0);
+        valread = read(new_socket, password, 1024);
+        if (valread < 1)
+        {
+            printf("eror recv\n");
+        }
+        printf("%s\n", password);
+        sprintf(buffer, "%s:%s", id, password);
+        printf("[Register] %s", buffer);
+        registerAkun(buffer);
+        bzero(buffer, sizeof(buffer));
 
-            if (strncmp(buffer, "1", 1) == 0)
-            {
-                puts("log");
-                char password[1024];
-                char login[1024];
-                // bzero(buffer, sizeof(buffer));
-                // mengirim pesan
-                char *message = "User ID :";
-                send(new_socket, message, strlen(message), 0);
-                // menerima kredensial
-                valread = read(new_socket, kredensial, 1024);
-                if (valread < 1)
-                {
-                    printf("eror recv\n");
-                }
-                printf("cred%s\n", kredensial);
-                kredensial[strcspn(kredensial, "\n")] = 0;
-                message = "password :";
-                send(new_socket, message, strlen(message), 0);
-                valread = read(new_socket, password, 1024);
-                if (valread < 1)
-                {
-                    printf("eror recv\n");
-                }
-                printf("pass %s\n", password);
-                sprintf(login, "%s:%s", kredensial, password);
-                printf("[LOGIN] %s", login);
-                strtok(login, "\n");
-                printf("len %d\n", strlen(login));
-                // printf("%s", buffer);
-                // Check login
-                otentikasi = checkLogin(login);
-                char isotentikasi[2];
-                memset(isotentikasi, 0, 2);
-                sprintf(isotentikasi, "%d", otentikasi);
-                // kirim otentikasi
-                printf("auth %d\n", otentikasi);
-                printf("auth %d\n", isotentikasi);
-                send(new_socket, isotentikasi, strlen(isotentikasi), 0);
-                // bzero(buffer, sizeof(buffer));
-                bzero(buffer, sizeof(buffer));
-            }
-            if (strncmp(buffer, "2", 1) == 0)
-            {
-                char id[1024];
-                char password[1024];
-                bzero(buffer, sizeof(buffer));
-                char *message = "user id : ";
-                send(new_socket, message, strlen(message), 0);
-                valread = read(new_socket, id, 1024);
-                if (valread < 1)
-                {
-                    printf("eror recv\n");
-                }
-                printf("%s\n", id);
-                strtok(id, "\n");
-                char *message2 = "password : ";
-                send(new_socket, message2, strlen(message2), 0);
-                valread = read(new_socket, password, 1024);
-                if (valread < 1)
-                {
-                    printf("eror recv\n");
-                }
-                printf("%s\n", password);
-                sprintf(buffer, "%s:%s", id, password);
-                printf("[Register] %s", buffer);
-                registerAkun(buffer);
-                bzero(buffer, sizeof(buffer));
-
-                message = "Server :Registrasi Berhasil Dilakukan\n";
-                send(new_socket, message, strlen(message), 0);
-            }
+        message = "Server :Registrasi Berhasil Dilakukan\n";
+        send(new_socket, message, strlen(message), 0);
+    }
+    else if (strcmp(buffer, "3\n") == 0)
+    {
+        break;
+    }
 
 ```
-<br>
+_Code server_
 
+```cpp
+while (otentikasi == 0)
+  {
+    puts("otentikasi 0");
+    bzero(buffer, sizeof(buffer));
+    valread = read(sock, buffer, 1024);
+    if (valread < 1)
+    {
+      printf("1eror recv\n");
+    }
+    printf("%s\n", buffer);
+    bzero(buffer, sizeof(buffer));
+    fgets(buff, 1024, stdin);
+    send(sock, buff, strlen(buff), 0);
+
+    //
+    if (strncmp(buff, "1", 1) == 0)
+    {
+      bzero(buffer, sizeof(buffer));
+      bzero(buff, sizeof(buff));
+      puts("login form");
+      char buff2[1024] = {0};
+      valread = read(sock, buffer, 1024);
+      if (valread < 1)
+      {
+        printf("2eror recv\n");
+      }
+      printf("%s\n", buffer);
+      bzero(buffer, sizeof(buffer));
+      fgets(buff, 1024, stdin);
+      send(sock, buff, strlen(buff), 0);
+      bzero(buff, sizeof(buff));
+      puts("...");
+      valread = read(sock, buffer, 1024);
+      if (valread < 1)
+      {
+        printf("3eror recv\n");
+      }
+      printf("%s\n", buffer);
+      bzero(buffer, sizeof(buffer));
+      fgets(buff2, 1024, stdin);
+      send(sock, buff2, strlen(buff2), 0);
+      bzero(buff2, sizeof(buff2));
+      char isotentikasi[2] = {0};
+      valread = read(sock, isotentikasi, 2);
+      if (valread < 1)
+      {
+        printf("4eror recv\n");
+      }
+      printf("auth %s\n", isotentikasi);
+      otentikasi = atoi(isotentikasi);
+      bzero(isotentikasi, sizeof(isotentikasi));
+    }
+    if (strncmp(buff, "2", 1) == 0)
+    {
+      // bersihkan buffer
+      bzero(buffer, sizeof(buffer));
+      bzero(buff, sizeof(buff));
+      // id
+      valread = read(sock, buffer, 1024);
+      if (valread < 1)
+      {
+        printf("5eror recv\n");
+      }
+      printf("%s\n", buffer);
+      bzero(buffer, sizeof(buffer));
+      // Masukkan kredensial
+      fgets(buff, 1024, stdin);
+      // kirim kredensial
+      send(sock, buff, strlen(buff), 0);
+      bzero(buff, sizeof(buff));
+
+      valread = read(sock, buffer, 1024);
+      if (valread < 1)
+      {
+        printf("6eror recv\n");
+      }
+      printf("%s\n", buffer);
+      bzero(buffer, sizeof(buffer));
+      fgets(buff, 1024, stdin);
+      send(sock, buff, strlen(buff), 0);
+      bzero(buff, sizeof(buff));
+    }
+    else if (strcmp(buff, "3\n") == 0)
+    {
+      printf("Good Bye\n");
+      return 0;
+    }
+```
+_Code client_
+<br>
+Potongan program untuk mengirim dan menerima pesan dari server dan client kami menggunakan bantuan fungsi `send` untuk melakukan pengiriman buffer data,  `read` untuk menerima dan menyimpan variabel dari data yang dikirimkan, `bzero` untuk me-NULL-kan variabel buffer yang berguna untuk tempat pengiriman ataupun penerimaan data. 
+
+```cpp
+    char *message = "user id : ";
+    send(new_socket, message, strlen(message), 0);
+```
+_Code pengiriman data, argumen untuk fungsi `send` ada 4 yaitu `new_socket` sebagai variabel koneksi socket, `message` sebagai pesan yang dikirimkan, `strlen()` sebagai panjangnya data yang dikirimkan , dan 0 sebagai flags default dari fungsi `send`_
+
+```cpp
+    int valread;
+    char id[1024];
+    valread = read(new_socket, id, 1024);
+    if (valread < 1)
+    {
+        printf("eror recv\n");
+    }
+    printf("%s\n", id);
+    strtok(id, "\n");
+```
+_Code penerimaan data, dimana variabel valread nantinya akan menjadi status keberhasilan penerimaan data, jika fungsi `read` mengembalikan nilai -1 maka akan memunculkan pesan error recv. Fungsi `read` memiliki 3 argument yang pertama `new_socket` berarti file descriptor yang merupakan variabel connect ke server/client, `id` merupakan variabel buffer yang akan menerima pesan yang dikirimkan, dan argumen ketiga yaitu `1024` sebagai panjang file yang mampu ditampung fungsi read._
 ## Soal 1.b.
 ## **Analisa Soal**
+Pada soal 1.b kita diharuskan untuk mempunyai database dengan nama files.tsv, yang akan menyimpan data publisher, tahun publikasi, dan path nama file yang ada di server. Selain itu juga harus terdapat folder FILES, yang akan menyimpan file file yang ditambahkan pada server.
 
 **Cara Pengerjaan**
 ---
-Guna menyelesaikan permasalahan b, kami mengikuti arahan dari Tips dengan menggunakan ....
+Guna menyelesaikan permasalahan b, kami mengikuti arahan dari Tips dengan menggunakan fungsi mkdir dan juga menggunakan fopen dengan tag `a+` dimana akan membuka file, dan jika file tersebut tidak ditemukan maka akan otomatis membuat filenya. Code ini dijalankan sebelum server terkoneksi dengan client, jadi ketika server masih baru dijalankan akana dibuat file `files.tsv` dan folder FILES.
 
+```cpp
+....
+    mkdir("FILES", 0777);
+    FILE *fp;
+    fp = fopen("files.tsv", "a+");
+    fclose(fp);
+....
+```
+_Code server_
 <br>
 
 ## Soal 1.c.
 ## **Analisa Soal**
-
+Pada soal ini kita akan membuat code untuk fitur add pada soal. Fitur add ini nanti membuat client dapat menambahkan data ke dalam server yaitu data publisher, tahun publikasi dan path sebuah file yang akan dikirimkan oleh user ke server. Server sendiri akan menyimpan inputan dari client dan dimasukan ke dalam database, selain itu server juga bisa menerima file yang diupload dari client.
 
 **Cara Pengerjaan**
 ---
-Dalam menjawab soal 1.c. kami menyelesaikannya dengan bantuan dari ......
+Dalam menjawab soal 1.c. kami menyelesaikannya dengan bantuan dari send dan read pada socket programming seperti dijelaskan dalam soal poin sebelumnya. Server akan mengirimkan form untuk publisher, tahun publikasi, filepath yang akan di upload, dan client akan mengirimkan datanya satu persatu. Jika client sudah menginputkan ketiga form yang dikirimkan server maka dari client akan melakukan upload file sesuai dengan filepath yang diinputkan dan server akan menerimanya _byte-per-byte_. Setelah file berhasil dikirimkan ke server, server akan memasukan data data yang sudah didapatkan dari client kedalam database `files.tsv`.
+
+```cpp
+....
+if (strncmp(buffer2, "add", 3) == 0)
+{
+    bzero(buffer2, sizeof(buffer2));
+    // publisher
+    char *message = "   Publisher: ";
+    send(new_socket, message, strlen(message), 0);
+    char publisher[1024] = {0};
+    valread = read(new_socket, publisher, 1024);
+    if (valread < 1)
+    {
+        printf("eror recv\n");
+    }
+    //printf("%s", publisher);
+    publisher[strcspn(publisher, "\n")] = 0;
+    printf("%s\n", publisher);
+    // tahun publikasi
+    char *message2 = "Tahun Publikasi: ";
+    send(new_socket, message2, strlen(message2), 0);
+    char tahun_publikasi[1024] = {0};
+    valread = read(new_socket, tahun_publikasi, 1024);
+    if (valread < 1)
+    {
+        printf("eror recv\n");
+    }
+    tahun_publikasi[strcspn(tahun_publikasi, "\n")] = 0;
+    printf("%s\n", tahun_publikasi);
+    // tahun publikasi
+    char *message3 = "Filepath: ";
+    send(new_socket, message3, strlen(message3), 0);
+    char temp[4096] = {0};
+    char temp3[4096] = {0};
+    char filenamepath[1024] = {0}, *temp2[100], *slash;
+    bzero(filenamepath, sizeof(filenamepath));
+
+    valread = read(new_socket, temp, 4096);
+    if (valread < 1)
+    {
+        printf("eror recv\n");
+    }
+    printf("te %s\n", temp);
+    int x = 0;
+    slash = strtok(temp, "/");
+    while (slash != NULL)
+    {
+        // printf("slashing\n");
+        temp2[x] = slash;
+        // printf("mp2 %s\n", temp2[x]);
+        x++;
+        slash = strtok(NULL, "/");
+    }
+
+    sprintf(filenamepath, "FILES/%s", temp2[x - 1]);
+    printf("file %s\n", filenamepath);
+    char bufferz[1024];
+    bzero(bufferz, sizeof(bufferz));
+    FILE *received_file;
+    ssize_t len;
+    int remain_data = 0;
+    int file_size;
+    char file_length[1024] = {0};
+    long fsize;
+    char file_content[1024] = {0};
+    FILE *file_fd = fopen(filenamepath, "w");
+
+    int n;
+    while (1)
+    {
+        printf("...");
+        n = read(new_socket, bufferz, 1024);
+        if (strcmp(bufferz, "EOF") == 0)
+        {
+            break;
+        }
+        if (n > 0 && strcmp(bufferz, "error") == 0)
+        {
+            fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+            break;
+        }
+
+        fprintf(file_fd, "%s", bufferz);
+        bzero(bufferz, sizeof(bufferz));
+    }
+    fclose(file_fd);
+
+    tambahDB(publisher, tahun_publikasi, filenamepath, temp2[x - 1], 0);
+}
+....
+```
+_Code server dalam penerimaan data dari client_
+
+```cpp
+void tambahDB(char *temp_publish, char *tahun_publikasi, char *filenamepath, char *fileekstensi, int n)
+{
+    char tmp[1024];
+    bzero(tmp, sizeof(tmp));
+    FILE *fp = fopen("files.tsv", "a+");
+    fprintf(fp, "%s< >%s< >%s\n", temp_publish, tahun_publikasi, filenamepath);
+    fclose(fp);
+
+    strcpy(publisher[jumlahData], temp_publish);
+    strcpy(year[jumlahData], tahun_publikasi);
+    strcpy(fullpath[jumlahData], filenamepath);
+
+    char another_buffer[100][1024];
+    char token2[1024];
+    int another_counter = 0;
+    char *potongtitik;
+    potongtitik = strtok(filenamepath, ".");
+    while (potongtitik != NULL)
+    {
+        strcpy(another_buffer[another_counter], potongtitik);
+        another_counter++;
+
+        potongtitik = strtok(NULL, ".");
+    }
+    if (another_buffer[1] > 0)
+    {
+        strcpy(ekstensi[jumlahData], another_buffer[1]);
+    }
+    else
+    {
+        strcpy(ekstensi[jumlahData], "no ekstensi");
+    }
+    char *token3 = strtok(filenamepath, "/");
+    strcpy(token2, strtok(NULL, "/"));
+    strcpy(nama[jumlahData], token2);
+
+    jumlahData++;
+    sprintf(tmp, "tambah: %s\n", fileekstensi);
+    runninglog(tmp);
+}
+```
+_Code server untuk memasukan input user ke dalam database_
+
+```cpp
+if (strcmp(buffer2, "add\n") == 0)
+{
+    FILE *fp;
+    char input[4096];
+    bzero(buffer2, sizeof(buffer2));
+    char *tes;
+    // publisher
+    valread = read(sock, buffer2, 4096);
+    if (valread < 1)
+    {
+    printf("8eror recv\n");
+    }
+    printf("%s", buffer2);
+    bzero(buffer2, sizeof(buffer2));
+    fgets(input, 4096, stdin);
+    // printf("%s", input);
+    send(sock, input, strlen(input), 0);
+    printf("%s", input);
+    bzero(input, sizeof(input));
+
+    // tahun publikasi
+    valread = read(sock, buffer2, 4096);
+    if (valread < 1)
+    {
+    printf("9eror recv\n");
+    }
+    printf("%s", buffer2);
+    bzero(buffer2, sizeof(buffer2));
+    fgets(input, 4096, stdin);
+    send(sock, input, strlen(input), 0);
+    bzero(input, sizeof(input));
+    // filepath
+    valread = read(sock, buffer2, 4096);
+    if (valread < 1)
+    {
+    printf("10eror recv\n");
+    }
+    printf("%s", buffer2);
+    bzero(buffer2, sizeof(buffer2));
+    char filenamepath[4096] = {0};
+    bzero(filenamepath, sizeof(filenamepath));
+    // gets(tes);
+    fgets(input, 4096, stdin);
+    printf("buf%s\n", input);
+    strcpy(filenamepath, input);
+    bzero(input, sizeof(input));
+    strtok(filenamepath, "\n");
+    printf("%s\n", filenamepath);
+    // filenamepath[strcspn(filenamepath, "\n")] = 0;
+    send(sock, filenamepath, strlen(filenamepath), 0);
+
+    ssize_t len;
+    struct stat file_stat;
+    char file_size[256];
+    char file_length[1024];
+
+    fp = fopen(filenamepath, "r+");
+    printf("%x\n", fp);
+    char bufferz[1024];
+    bzero(bufferz, sizeof(bufferz));
+    if (fp > 0)
+    {
+    printf("Sending file: %s\n", filenamepath);
+    }
+    else
+    {
+    printf("Failed to open file: %s\n", filenamepath);
+    send(sock, "error", 20, 0);
+    // return;
+    }
+    bzero(bufferz, sizeof(bufferz));
+    while (fgets(bufferz, 1024, fp) != NULL)
+    {
+    // printf("tes");
+    if (send(sock, bufferz, sizeof(bufferz), 0) == -1)
+    {
+        fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+        exit(1);
+    }
+    bzero(bufferz, sizeof(bufferz));
+    }
+    fclose(fp);
+    send(sock, "EOF", 10, 0);
+    printf("[+]File data sent successfully.\n");
+}
+```
+_Code client dalam fitur add_
 <br>
 
 ## Soal 1.d.
 
 ## **Analisa Soal**
-
+Pada soal ini kita diminta untuk client bisa melakukan fitur download, yaitu mengambil file yang disimpan dalam database server. Disini prosesnya adalah client mengirimkan request file apa yang diminta kemudian server akan melakukan pengecekan apakah file tersebut ada di server atau tidak, jika ada maka file akan dikirimkan dari server ke client, jika tidak akan diberikan pesan gagal ke client.
 
 **Cara Pengerjaan**
 ---
+Dalam pengerjaan soal 1.d ini kami menggunakan snipet code yang pada soal sebelum juga sudah tersedia seperti send dan read message dari client ataupun server, proses pengiriman dan penerimaan file yang tadinya juga sudah terdapat pada fitur add. Pada soal ini kami hanya menambahkan pengecekan database terlebih dahulu memastikan file yang apakah benar terdapat dalam sisi server atau tidak. 
+
+```cpp
+if (strncmp(buffer2, "download", 8) == 0)
+{
+    char *namafile;
+    char *tmp;
+    char *tmp2[50];
+    tmp = strtok(buffer2, " ");
+    int n;
+    n = 0;
+    while (tmp != NULL)
+    {
+    tmp2[n] = tmp;
+    n++;
+    tmp = strtok(NULL, " ");
+    }
+    printf("%s\n", tmp2[n - 1]);
+    send(sock, tmp2[n - 1], sizeof(tmp2[n - 1]), 0);
+    printf("%s\n", tmp2[n - 1]);
+    char filenamepath[100];
+    strcpy(filenamepath, tmp2[n - 1]);
+    strtok(filenamepath, "\n");
+    printf("file %s\n", filenamepath);
+    bzero(buffer2, sizeof(buffer2));
+
+    valread = read(sock, buffer2, 4096);
+    if (valread < 1)
+    {
+    printf("10eror recv\n");
+    }
+    printf("%s\n", buffer2);
+    if (strncmp(buffer2, "File tidak dapat", 16) != 0)
+    {
+    FILE *file_fd = fopen(filenamepath, "a+");
+    char bufferz[1024];
+    bzero(bufferz, sizeof(bufferz));
+    int pors;
+    while (1)
+    {
+        printf("...");
+        pors = read(sock, bufferz, 1024);
+        if (strcmp(bufferz, "EOF") == 0)
+        {
+        break;
+        }
+        if (pors > 0 && strcmp(bufferz, "error") == 0)
+        {
+        fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+        break;
+        }
+
+        fprintf(file_fd, "%s", bufferz);
+        bzero(bufferz, sizeof(bufferz));
+    }
+    fclose(file_fd);
+    printf("done\n");
+    }
+    else
+    {
+    printf("file gagal dikirim\n");
+    }
+    bzero(buffer2, sizeof(buffer2));
+}
+```
+_Code Client dalam fitur download_
+
+Dalam sisi client akan mengirimkan command seperti `download rop.py` , rop.py adalah nama file yang ingin di-download oleh client, Dari command client yang berbentuk seperti itu, Code akan memotong perintah client menjadi dua bagian, yang pertama adalah `download` yang kedua `rop.py` atau nama file yang diminta client. Perintah pertama ini akan 
+
+```cpp
+if (strncmp(buffer2, "download", 8) == 0)
+{
+    printf("%s\n", buffer2);
+    int status, avail = 0, pcc;
+    char namafile[4096];
+    char old[1024];
+    char ano[1024];
+    bzero(namafile, sizeof(namafile));
+    valread = read(new_socket, namafile, 4096);
+    if (valread < 1)
+    {
+        printf("recv err\n");
+    }
+    printf("nama file %s\n", namafile);
+    sprintf(old, "FILES/%s", namafile);
+    printf("full %s\n", old);
+    strtok(old, "\n");
+    sprintf(ano, "%s/FILES/%s", cwd, namafile);
+    strtok(ano, "\n");
+    printf("%s\n", ano);
+    for (int i = 0; i < jumlahData; i++)
+    {
+        if (strcmp(fullpath[i], old) == 0)
+        {
+
+            avail = 1;
+            pcc = i;
+            break;
+        }
+    }
+
+    if (avail == 0)
+    {
+        printf("fail\n");
+        char *msg404lg = "File tidak dapat ditemukan";
+        send(new_socket, msg404lg, strlen(msg404lg), 0);
+    }
+    else
+    {
+        printf("ada\n");
+        char *msg404lg = "File sedang dikirim...";
+        send(new_socket, msg404lg, strlen(msg404lg), 0);
+        FILE *fp = fopen(ano, "r+");
+        char bufferz[1024];
+        memset(bufferz, 0, 1024);
+        if (fp > 0)
+        {
+            printf("Sending file: %s\n", ano);
+        }
+        else
+        {
+            printf("Failed to open file: %s\n", ano);
+            send(new_socket, "error", 20, 0);
+        }
+        bzero(bufferz, sizeof(bufferz));
+        while (fgets(bufferz, 1024, fp) != NULL)
+        {
+            printf("...");
+            if (send(new_socket, bufferz, sizeof(bufferz), 0) == -1)
+            {
+                fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+                exit(1);
+            }
+            bzero(bufferz, sizeof(bufferz));
+        }
+        fclose(fp);
+
+        send(new_socket, "EOF", 10, 0);
+        printf("done\n");
+    }
+}
+```
+_Code sisi server untuk fitur download_
 
 
 <br>
