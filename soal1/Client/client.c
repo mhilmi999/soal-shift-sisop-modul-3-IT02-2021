@@ -1,17 +1,17 @@
 #include <stdio.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #include <netinet/in.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/sendfile.h>
 
-#define PORT 1037
+#define PORT 1040
 char cwd[100];
 
 int main(int argc, char const *argv[])
@@ -79,7 +79,7 @@ int main(int argc, char const *argv[])
       fgets(buff, 1024, stdin);
       send(sock, buff, strlen(buff), 0);
       bzero(buff, sizeof(buff));
-      puts("lalal");
+      puts("...");
       valread = read(sock, buffer, 1024);
       if (valread < 1)
       {
@@ -226,7 +226,7 @@ int main(int argc, char const *argv[])
           bzero(bufferz, sizeof(bufferz));
           while (fgets(bufferz, 1024, fp) != NULL)
           {
-            // printf("tes");
+            printf("...");
             if (send(sock, bufferz, sizeof(bufferz), 0) == -1)
             {
               fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
@@ -236,13 +236,14 @@ int main(int argc, char const *argv[])
           }
           fclose(fp);
           send(sock, "EOF", 10, 0);
-          printf("[+]File data sent successfully.\n");
+          printf("\n[+]File data sent successfully.\n");
         }
         if (strncmp(buffer2, "delete", 6) == 0)
         {
           char *namafile;
           char *tmp;
           char *tmp2[50];
+          char buff[1024];
           tmp = strtok(buffer2, " ");
           int n;
           n = 0;
@@ -256,6 +257,12 @@ int main(int argc, char const *argv[])
           printf("%s\n", tmp2[n - 1]);
           send(sock, tmp2[n - 1], sizeof(tmp2[n - 1]), 0);
           printf("%s\n", tmp2[n - 1]);
+          valread = read(sock, buff, 1024);
+          if (valread < 1)
+          {
+            printf("delete eror recv\n");
+          }
+          printf("%s\n", buff);
           // printf("under maintanance\n");
         }
         if (strncmp(buffer2, "see", 3) == 0)
@@ -273,7 +280,42 @@ int main(int argc, char const *argv[])
         }
         if (strncmp(buffer2, "find", 4) == 0)
         {
-          printf("under maintain\n");
+          char *namafile;
+          char *tmp;
+          char buff[1024];
+          char *tmp2[50];
+          tmp = strtok(buffer2, " ");
+          int n;
+          n = 0;
+          while (tmp != NULL)
+          {
+            tmp2[n] = tmp;
+            n++;
+            tmp = strtok(NULL, " ");
+          }
+          strtok(buffer2, "find ");
+          printf("%s\n", tmp2[n - 1]);
+          send(sock, tmp2[n - 1], sizeof(tmp2[n - 1]), 0);
+          printf("%s\n", tmp2[n - 1]);
+
+          // printf("under maintain\n");
+          valread = read(sock, buff, 4096);
+          if (valread < 1)
+          {
+            printf("find eror recv\n");
+          }
+          printf("%s\n", buff);
+
+          if (strncmp(buff, "file ditemukan", 14) == 0)
+          {
+            bzero(buff, sizeof(buff));
+            valread = read(sock, buff, 4096);
+            if (valread < 1)
+            {
+              printf("find eror recv\n");
+            }
+            printf("%s\n", buff);
+          }
         }
         if (strncmp(buffer2, "download", 8) == 0)
         {
@@ -289,7 +331,7 @@ int main(int argc, char const *argv[])
             n++;
             tmp = strtok(NULL, " ");
           }
-          strtok(buffer2, "delete ");
+          // strtok(buffer2, "download ");
           printf("%s\n", tmp2[n - 1]);
           send(sock, tmp2[n - 1], sizeof(tmp2[n - 1]), 0);
           printf("%s\n", tmp2[n - 1]);
@@ -297,30 +339,46 @@ int main(int argc, char const *argv[])
           strcpy(filenamepath, tmp2[n - 1]);
           strtok(filenamepath, "\n");
           printf("file %s\n", filenamepath);
-          FILE *file_fd = fopen(filenamepath, "a+");
-          char bufferz[1024];
-          bzero(bufferz, sizeof(bufferz));
-          int pors;
-          while (1)
-          {
-            // printf("lool\n");
-            pors = read(sock, bufferz, 1024);
-            if (strcmp(bufferz, "EOF") == 0)
-            {
-              break;
-            }
-            if (pors > 0 && strcmp(bufferz, "error") == 0)
-            {
-              printf("testint erorr\n");
-              // fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
-              break;
-            }
+          bzero(buffer2, sizeof(buffer2));
 
-            fprintf(file_fd, "%s", bufferz);
-            bzero(bufferz, sizeof(bufferz));
+          valread = read(sock, buffer2, 4096);
+          if (valread < 1)
+          {
+            printf("10eror recv\n");
           }
-          fclose(file_fd);
-          printf("done\n");
+          printf("%s\n", buffer2);
+          if (strncmp(buffer2, "File tidak dapat", 16) != 0)
+          {
+            FILE *file_fd = fopen(filenamepath, "a+");
+            char bufferz[1024];
+            bzero(bufferz, sizeof(bufferz));
+            int pors;
+            while (1)
+            {
+              printf("...");
+              pors = read(sock, bufferz, 1024);
+              if (strcmp(bufferz, "EOF") == 0)
+              {
+                break;
+              }
+              if (pors > 0 && strcmp(bufferz, "error") == 0)
+              {
+                // printf("testint erorr\n");
+                fprintf(stderr, "System error (%d): %s\n", errno, strerror(errno));
+                break;
+              }
+
+              fprintf(file_fd, "%s", bufferz);
+              bzero(bufferz, sizeof(bufferz));
+            }
+            fclose(file_fd);
+            printf("done\n");
+          }
+          else
+          {
+            printf("file gagal dikirim\n");
+          }
+          bzero(buffer2, sizeof(buffer2));
           // printf("under maintanance\n");
         }
         if (strncmp(buffer2, "quit", 4) == 0)
