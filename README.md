@@ -1342,22 +1342,86 @@ if (strncmp(buffer2, "delete", 6) == 0)
 ```
 _Code menambahkan log pada saat menggunakan fitur delete, Code ini dijalankan ketika sudah berhasil membuat database baru_
 <br>
+<br>
+**Kendala**
+---
+Cukup kesulitan karana banyak sekali task pada nomer 1 dan tidak bisa selesai tepat waktu karena kendala waktu saja, dan juga terdapat bug bug aneh dengan socket programming saya juga tidak paham kenapa
 
-**Screenshoot Hasil Run Program Soal Nomor 1 Client**\
-![hasil](./img/soal1/client/...png)
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 untuk multi connection**\
+![hasil](./img/soal1/multicon.png)
 ---
 
 <br>
 
-**Screenshoot Hasil Run Program Soal Nomor 1 Server**\
-![hasil](./img/soal1/server/...png)
+**Screenshoot Hasil Run Program Soal Nomor 1 fitur register**\
+![hasil](./img/soal1/register.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 fitur login**\
+![hasil](./img/soal1/login.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 fitur add**\
+![hasil](./img/soal1/\add%20upload%20file.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 fitur delete**\
+![hasil](./img/soal1/delete.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 fitur see**\
+![hasil](./img/soal1/see.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 fitur download**\
+![hasil](./img/soal1/\download.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 fitur find**\
+![hasil](./img/soal1/\find.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 file download client**\
+![hasil](./img/soal1/\downloadclient.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 file database**\
+![hasil](./img/soal1/\old-send.py.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 file akun.txt**\
+![hasil](./img/soal1/\akuntxt.png)
+---
+
+<br>
+
+**Screenshoot Hasil Run Program Soal Nomor 1 file running.log**\
+![hasil](./img/soal1/\running.log.png)
 ---
 
 <br>
 
 
-<br>
-<br>
 
 ## Soal 2
 ---
@@ -1585,19 +1649,13 @@ else
 
 **Kendala**
 ---
-Pada awalnya dari kelompok kami ...
+Tidak ada
 <br>
 
-**Screenshoot Hasil Run Program Soal2.a [soal2](./soal2/soal2a.c)**
-![hasil](./img/soal2/....png)
+**Screenshoot Hasil Run Program Soal2 dengan IPC [soal2](./soal2/)**
+![hasil](./img/soal2/\nomer2.png)
 ---
 
-**Screenshoot Hasil Run Program Soal2.b [soal2](./soal2/soal2b.c)**
-![hasil](./img/soal2/....png)
----
-
-**Screenshoot Hasil Run Program Soal2.c [soal2](./soal2/soal2c.c)**
-![hasil](./img/soal2/....png)
 ---
 
 
@@ -2087,17 +2145,19 @@ _Code thread pada tag `*`_
 <br>
 
 
-**Cara Pengerjaan**
----
-Dalam menjawab soal 3 kami ...
-<br>
-
-
 **Kendala**
 ---
-Pada awalnya dari kelompok kami ...
+Pada awalnya dari kelompok kami kesulitan untuk mengatasi kasus file hidden dan unknown dan ketika berhasil untuk hidden muncul bug lainya.
 <br>
 
-**Screenshoot Hasil Run Program Soal3 [soal3](./soal3/soal3.c)**
-![hasil](./img/soal3/....png)
+**Screenshoot Hasil Run Program Soal3 untuk fitur '*' [soal3](./soal3/soal3.c)**
+![hasil](./img/soal3/\bintang.png)
+---
+
+**Screenshoot Hasil Run Program Soal3 untuk fitur '-f' [soal3](./soal3/soal3.c)**
+![hasil](./img/soal3/\file.png)
+---
+
+**Screenshoot Hasil Run Program Soal3 untuk fitur '-f' [soal3](./soal3/soal3.c)**
+![hasil](./img/soal3/\dir.png)
 ---

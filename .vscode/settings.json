@@ -2,5 +2,6 @@
     "files.associations": {
         "ipc.h": "c",
         "time.h": "c"
-    }
+    },
+    "svn.ignoreMissingSvnWarning": true
 }
