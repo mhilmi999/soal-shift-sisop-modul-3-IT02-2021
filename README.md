@@ -1368,7 +1368,7 @@ Cukup kesulitan karana banyak sekali task pada nomer 1 dan tidak bisa selesai te
 <br>
 
 **Screenshoot Hasil Run Program Soal Nomor 1 fitur add**\
-![hasil](./img/soal1/\add%20upload%20file.png)
+![hasil](./img/soal1/add%20upload%20file.png)
 ---
 
 <br>
@@ -1386,37 +1386,37 @@ Cukup kesulitan karana banyak sekali task pada nomer 1 dan tidak bisa selesai te
 <br>
 
 **Screenshoot Hasil Run Program Soal Nomor 1 fitur download**\
-![hasil](./img/soal1/\download.png)
+![hasil](./img/soal1/download.png)
 ---
 
 <br>
 
 **Screenshoot Hasil Run Program Soal Nomor 1 fitur find**\
-![hasil](./img/soal1/\find.png)
+![hasil](./img/soal1/find.png)
 ---
 
 <br>
 
 **Screenshoot Hasil Run Program Soal Nomor 1 file download client**\
-![hasil](./img/soal1/\downloadclient.png)
+![hasil](./img/soal1/downloadclient.png)
 ---
 
 <br>
 
 **Screenshoot Hasil Run Program Soal Nomor 1 file database**\
-![hasil](./img/soal1/\old-send.py.png)
+![hasil](./img/soal1/old-send.py.png)
 ---
 
 <br>
 
 **Screenshoot Hasil Run Program Soal Nomor 1 file akun.txt**\
-![hasil](./img/soal1/\akuntxt.png)
+![hasil](./img/soal1/akuntxt.png)
 ---
 
 <br>
 
 **Screenshoot Hasil Run Program Soal Nomor 1 file running.log**\
-![hasil](./img/soal1/\running.log.png)
+![hasil](./img/soal1/running.log.png)
 ---
 
 <br>
@@ -1653,7 +1653,7 @@ Tidak ada
 <br>
 
 **Screenshoot Hasil Run Program Soal2 dengan IPC [soal2](./soal2/)**
-![hasil](./img/soal2/\nomer2.png)
+![hasil](./img/soal2/nomer2.png)
 ---
 
 ---
@@ -2151,13 +2151,13 @@ Pada awalnya dari kelompok kami kesulitan untuk mengatasi kasus file hidden dan 
 <br>
 
 **Screenshoot Hasil Run Program Soal3 untuk fitur '*' [soal3](./soal3/soal3.c)**
-![hasil](./img/soal3/\bintang.png)
+![hasil](./img/soal3/bintang.png)
 ---
 
 **Screenshoot Hasil Run Program Soal3 untuk fitur '-f' [soal3](./soal3/soal3.c)**
-![hasil](./img/soal3/\file.png)
+![hasil](./img/soal3/file.png)
 ---
 
 **Screenshoot Hasil Run Program Soal3 untuk fitur '-f' [soal3](./soal3/soal3.c)**
-![hasil](./img/soal3/\dir.png)
+![hasil](./img/soal3/dir.png)
 ---
